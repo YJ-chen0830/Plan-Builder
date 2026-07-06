@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工程計畫書產生器 | Plan Builder</title>
+<style>
+:root{
+  --navy:#0b1f3a;--navy2:#13284a;--gold:#c9a14a;--gold2:#e0bf6e;
+  --bg:#f5f3ee;--ink:#1c2530;--line:#d8d2c2;--card:#fff;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"Noto Sans TC","Segoe UI",sans-serif;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;height:100vh;}
+/* ─── Top bar ─── */
+#topbar{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#f5f3ee;padding:12px 20px;display:flex;align-items:center;gap:16px;flex-shrink:0;z-index:10;}
+#topbar h1{font-size:17px;font-weight:700;}
+#topbar span{color:var(--gold2);font-size:12px;border-left:1px solid rgba(255,255,255,.2);padding-left:14px;}
+#topbar .spacer{flex:1;}
+.top-btn{padding:7px 16px;border:none;border-radius:6px;cursor:pointer;font-size:13.5px;font-weight:600;}
+.top-btn.primary{background:var(--gold);color:var(--navy);}
+.top-btn.secondary{background:rgba(255,255,255,.12);color:#f5f3ee;border:1px solid rgba(255,255,255,.2);}
+.top-btn:hover{filter:brightness(1.1);}
+/* ─── Layout ─── */
+#layout{display:flex;flex:1;overflow:hidden;}
+/* ─── Left panel ─── */
+#left{width:320px;flex-shrink:0;background:#fff;border-right:1px solid var(--line);overflow-y:auto;display:flex;flex-direction:column;}
+#left-tabs{display:flex;border-bottom:1px solid var(--line);}
+.ltab{flex:1;padding:10px 6px;text-align:center;font-size:12px;font-weight:600;cursor:pointer;color:#888;border-bottom:2px solid transparent;}
+.ltab.active{color:var(--navy);border-bottom:2px solid var(--gold);}
+#left-content{padding:16px;flex:1;}
+.section-title{font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 8px;border-left:3px solid var(--gold);padding-left:8px;}
+label{display:block;font-size:11.5px;color:#666;margin:8px 0 3px;}
+input[type=text],input[type=date],input[type=number],select,textarea{
+  width:100%;padding:6px 9px;border:1px solid #ccc;border-radius:5px;
+  font-size:13px;background:#fafaf8;font-family:inherit;
+}
+textarea{resize:vertical;font-family:"Courier New",monospace;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.plan-type-btn{display:block;width:100%;text-align:left;padding:9px 12px;margin-bottom:6px;border:1.5px solid var(--line);border-radius:7px;background:#fafaf8;cursor:pointer;font-size:13px;font-weight:600;color:var(--navy);transition:all .15s;}
+.plan-type-btn:hover{border-color:var(--gold);background:#fff8e6;}
+.plan-type-btn.active{border-color:var(--gold);background:#fff8e6;color:var(--navy);}
+.plan-type-btn .sub{font-size:11px;color:#888;font-weight:400;}
+.module-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0ede5;font-size:13px;}
+.module-item input[type=checkbox]{width:auto;accent-color:var(--gold);}
+.module-item label{margin:0;flex:1;cursor:pointer;}
+/* ─── Preview ─── */
+#preview-wrap{flex:1;overflow-y:auto;background:#e8e5de;padding:24px;display:flex;flex-direction:column;align-items:center;gap:0;}
+/* ─── Document Pages ─── */
+.page{
+  width:210mm;min-height:297mm;background:#fff;
+  box-shadow:0 2px 12px rgba(0,0,0,.15);
+  padding:18mm 15mm;margin-bottom:16px;
+  position:relative;font-family:"Noto Sans TC",serif;
+  font-size:11pt;line-height:1.8;color:#111;
+}
+/* Cover page */
+.cover{text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:267mm;}
+.cover .logo-wrap{margin-bottom:30px;}
+.cover .logo-wrap svg{width:60px;height:60px;}
+.cover .project-name{font-size:22pt;font-weight:700;color:var(--navy);margin-bottom:8px;line-height:1.4;}
+.cover .plan-title{font-size:16pt;font-weight:700;color:var(--navy);margin-bottom:40px;border-bottom:2px solid var(--gold);padding-bottom:12px;width:80%;}
+.cover .meta-table{width:80%;border-collapse:collapse;margin:0 auto;text-align:left;}
+.cover .meta-table td{padding:8px 12px;border-bottom:1px solid #ddd;font-size:12pt;}
+.cover .meta-table td:first-child{width:38%;font-weight:600;color:var(--navy);}
+.cover .date-line{margin-top:40px;font-size:13pt;color:#555;}
+/* Review table page */
+.review-page{page-break-before:always;}
+.review-page h2{font-size:14pt;font-weight:700;color:var(--navy);text-align:center;margin-bottom:20px;border-bottom:2px solid var(--navy);padding-bottom:8px;}
+.review-table{width:100%;border-collapse:collapse;font-size:10pt;}
+.review-table td,.review-table th{border:1px solid #999;padding:6px 8px;vertical-align:top;}
+.review-table th{background:#f0f0f0;font-weight:600;text-align:center;}
+.sig-box{height:60px;border:1px solid #999;margin:4px 0;}
+/* TOC */
+.toc{page-break-before:always;}
+.toc h2{font-size:14pt;font-weight:700;color:var(--navy);text-align:center;margin-bottom:16px;}
+.toc-item{display:flex;justify-content:space-between;padding:3px 0;font-size:10.5pt;border-bottom:1px dotted #ccc;}
+.toc-item .ch{font-weight:600;color:var(--navy);}
+.toc-item .pg{color:#888;}
+/* Chapter */
+.doc-section{page-break-before:always;}
+.doc-section:first-child{page-break-before:auto;}
+.ch-title{font-size:14pt;font-weight:700;color:var(--navy);border-left:4px solid var(--gold);padding-left:10px;margin:0 0 16px;}
+.sub-title{font-size:12pt;font-weight:700;color:var(--navy);margin:14px 0 8px;}
+.sub2-title{font-size:11pt;font-weight:700;margin:10px 0 6px;}
+p{margin-bottom:8px;text-indent:2em;}
+ul{margin:6px 0 10px 2em;}
+li{margin-bottom:4px;}
+table.content-table{width:100%;border-collapse:collapse;margin:10px 0;font-size:10pt;}
+table.content-table th,table.content-table td{border:1px solid #aaa;padding:5px 8px;}
+table.content-table th{background:#f0f0f0;font-weight:700;text-align:center;}
+.check-table th,table.check-table td{border:1px solid #aaa;padding:4px 6px;font-size:9.5pt;}
+.check-table th{background:#f0f0f0;text-align:center;font-weight:700;}
+.flow-box{border:1.5px solid #aaa;border-radius:6px;padding:10px 14px;margin:8px 0;background:#fafaf8;font-size:10.5pt;}
+.flow-step{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px;}
+.flow-step .num{background:var(--navy);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:2px;}
+.page-num{position:absolute;bottom:10mm;right:15mm;font-size:9pt;color:#888;}
+/* Footer disclaimer */
+.doc-footer{margin-top:30px;padding-top:10px;border-top:1px solid #ddd;font-size:9pt;color:#777;text-align:center;}
+/* Print */
+@media print{
+  body{display:block;}
+  #topbar,#left,#preview-wrap{display:none!important;}
+  .page{width:100%;box-shadow:none;margin:0;page-break-after:always;padding:15mm 13mm;}
+  @page{size:A4;margin:0;}
+}
+</style>
+</head>
+<body>
+<div id="topbar">
+  <svg width="32" height="32" viewBox="0 0 44 44" fill="none">
+    <rect x="2" y="12" width="9" height="28" rx="1" fill="#c9a14a"/>
+    <rect x="14" y="6" width="9" height="34" rx="1" fill="#c9a14a"/>
+    <rect x="26" y="16" width="7" height="24" rx="1" fill="#c9a14a"/>
+    <rect x="33" y="22" width="7" height="18" rx="1" fill="#c9a14a"/>
+    <path d="M2 42 Q22 36 40 42" stroke="#e0bf6e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  </svg>
+  <h1>工程計畫書產生器</h1>
+  <span>儒鴻結構技師事務所</span>
+  <div class="spacer"></div>
+  <button class="top-btn secondary" onclick="window.print()">🖨 列印 / PDF</button>
+  <button class="top-btn primary" onclick="refreshPreview()">🔄 更新預覽</button>
+</div>
+
+<div id="layout">
+  <!-- Left panel -->
+  <div id="left">
+    <div id="left-tabs">
+      <div class="ltab active" id="tab-info" onclick="switchLTab('info')">工程資訊</div>
+      <div class="ltab" id="tab-plan" onclick="switchLTab('plan')">計畫類型</div>
+      <div class="ltab" id="tab-mod" onclick="switchLTab('mod')">章節模組</div>
+    </div>
+    <div id="left-content">
+      <!-- Info tab -->
+      <div id="panel-info">
+        <div class="section-title">工程基本資料</div>
+        <label>工程名稱</label><input type="text" id="p-name" value="中興嶺調整池新建工程" oninput="refreshPreview()">
+        <label>合約編號</label><input type="text" id="p-contract" value="" oninput="refreshPreview()">
+        <label>工程位置</label><input type="text" id="p-loc" value="臺中市新社區中興嶺" oninput="refreshPreview()">
+        <label>計畫書類型（簡稱，顯示於封面）</label><input type="text" id="p-plantype" value="施工架施工計畫書" oninput="refreshPreview()">
+
+        <div class="section-title">主辦 / 監造 / 施工</div>
+        <label>主辦機關</label><input type="text" id="p-owner" value="臺中市政府水利局" oninput="refreshPreview()">
+        <label>設計廠商</label><input type="text" id="p-designer" value="黎明工程顧問股份有限公司" oninput="refreshPreview()">
+        <label>監造廠商</label><input type="text" id="p-supervisor" value="黎明工程顧問股份有限公司" oninput="refreshPreview()">
+        <label>施工廠商</label><input type="text" id="p-contractor" value="宏儒營造有限公司" oninput="refreshPreview()">
+        <label>專任工程人員</label><input type="text" id="p-engineer" value="朱柏嘉" oninput="refreshPreview()">
+        <label>工地主任</label><input type="text" id="p-site-mgr" value="" oninput="refreshPreview()">
+        <label>品管人員</label><input type="text" id="p-qc" value="" oninput="refreshPreview()">
+        <label>職安人員</label><input type="text" id="p-safety" value="" oninput="refreshPreview()">
+
+        <div class="section-title">合約資訊</div>
+        <div class="row2">
+          <div><label>工程期限（日曆天）</label><input type="number" id="p-duration" value="550" oninput="refreshPreview()"></div>
+          <div><label>契約金額（元）</label><input type="text" id="p-amount" value="116,200,000" oninput="refreshPreview()"></div>
+        </div>
+        <label>開工日期</label><input type="date" id="p-start" oninput="refreshPreview()">
+
+        <div class="section-title">提報資訊</div>
+        <div class="row2">
+          <div><label>提報次數</label><input type="number" id="p-submit-n" value="1" oninput="refreshPreview()"></div>
+          <div><label>提報日期</label><input type="date" id="p-submit-date" oninput="refreshPreview()"></div>
+        </div>
+        <label>文件編號</label><input type="text" id="p-docno" value="JRH-SC-001" oninput="refreshPreview()">
+      </div>
+
+      <!-- Plan type tab -->
+      <div id="panel-plan" style="display:none">
+        <div class="section-title">選擇計畫書類型</div>
+        <button class="plan-type-btn active" data-plan="scaffold" onclick="setPlan(this)">
+          施工架施工計畫書<br><span class="sub">框式鋼管施工架 · 品質 · 安衛</span>
+        </button>
+        <button class="plan-type-btn" data-plan="formwork" onclick="setPlan(this)">
+          模板工程施工計畫書<br><span class="sub">樓版 / 牆版模板 · 支撐系統</span>
+        </button>
+        <button class="plan-type-btn" data-plan="formwork-calc" onclick="setPlan(this)">
+          模板支撐計算書<br><span class="sub">H型鋼 · 調整式鋼管 · LRFD計算</span>
+        </button>
+        <button class="plan-type-btn" data-plan="concrete" onclick="setPlan(this)">
+          混凝土澆置計畫書<br><span class="sub">配比 · 澆置順序 · 養護</span>
+        </button>
+        <button class="plan-type-btn" data-plan="excavation" onclick="setPlan(this)">
+          開挖擋土支撐計畫書<br><span class="sub">開挖分析 · 支撐系統 · 監測</span>
+        </button>
+        <button class="plan-type-btn" data-plan="earthwork" onclick="setPlan(this)">
+          土方暫置計畫書<br><span class="sub">土方量 · 暫置地點 · 防塵</span>
+        </button>
+        <button class="plan-type-btn" data-plan="runoff" onclick="setPlan(this)">
+          逕流廢水計畫書<br><span class="sub">合理化公式 · 沉砂池設計</span>
+        </button>
+        <button class="plan-type-btn" data-plan="planting" onclick="setPlan(this)">
+          分項植栽計畫書<br><span class="sub">植栽種類 · 施工程序 · 養護</span>
+        </button>
+        <button class="plan-type-btn" data-plan="quality" onclick="setPlan(this)">
+          品質計畫書<br><span class="sub">11章制式架構 · PDCA · 自主檢查表</span>
+        </button>
+
+        <div class="section-title" id="plan-params-title" style="display:none">計畫專屬參數</div>
+        <div id="plan-params"></div>
+      </div>
+
+      <!-- Modules tab -->
+      <div id="panel-mod" style="display:none">
+        <div class="section-title">啟用 / 停用章節</div>
+        <div id="module-list"></div>
+        <div style="margin-top:12px;font-size:11.5px;color:#888;line-height:1.7;">
+          勾選要產出的章節。更新後點「更新預覽」或直接修改輸入欄位即可看到即時效果。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Preview -->
+  <div id="preview-wrap">
+    <div id="doc-container"><!-- pages injected here --></div>
+  </div>
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────
+var PLAN = 'scaffold';
+var MODULES = {};
+
+// ─── Plan definitions ─────────────────────────────────
+var PLAN_MODULES = {
+  scaffold: [
+    {id:'cover',      label:'封面',                   default:true},
+    {id:'review',     label:'審查核章表',              default:true},
+    {id:'toc',        label:'目錄',                   default:true},
+    {id:'sc-ch1',     label:'第1章 工項概述',          default:true},
+    {id:'sc-ch2',     label:'第2章 施工方法與步驟',    default:true},
+    {id:'sc-ch3',     label:'第3章 施工機具',          default:true},
+    {id:'sc-ch4',     label:'第4章 預定作業進度',      default:true},
+    {id:'sc-ch5',     label:'第5章 分項品質計畫',      default:true},
+    {id:'sc-ch6',     label:'第6章 安全衛生管理',      default:true},
+    {id:'sc-ch7',     label:'第7章 拆架計畫書',        default:true},
+  ],
+  formwork: [
+    {id:'cover',      label:'封面',              default:true},
+    {id:'review',     label:'審查核章表',        default:true},
+    {id:'toc',        label:'目錄',             default:true},
+    {id:'fw-ch1',     label:'第1章 工程概述',    default:true},
+    {id:'fw-ch2',     label:'第2章 模板材料',    default:true},
+    {id:'fw-ch3',     label:'第3章 施工方法',    default:true},
+    {id:'fw-ch4',     label:'第4章 品質計畫',    default:true},
+    {id:'fw-ch5',     label:'第5章 安全衛生',    default:true},
+  ],
+  'formwork-calc': [
+    {id:'cover',      label:'封面',              default:true},
+    {id:'review',     label:'審查核章表',        default:true},
+    {id:'toc',        label:'目錄',             default:true},
+    {id:'fc-ch1',     label:'第1章 工程概要',    default:true},
+    {id:'fc-ch2',     label:'第2章 支撐說明及配置圖', default:true},
+    {id:'fc-ch3',     label:'第3章 模板支撐計算式', default:true},
+  ],
+  concrete: [
+    {id:'cover',      label:'封面',              default:true},
+    {id:'review',     label:'審查核章表',        default:true},
+    {id:'toc',        label:'目錄',             default:true},
+    {id:'co-ch1',     label:'第1章 工程概述',    default:true},
+    {id:'co-ch2',     label:'第2章 材料規格',    default:true},
+    {id:'co-ch3',     label:'第3章 澆置計畫',    default:true},
+    {id:'co-ch4',     label:'第4章 養護計畫',    default:true},
+    {id:'co-ch5',     label:'第5章 品質管理',    default:true},
+  ],
+  excavation: [
+    {id:'cover',      label:'封面',              default:true},
+    {id:'review',     label:'審查核章表',        default:true},
+    {id:'toc',        label:'目錄',             default:true},
+    {id:'ex-ch1',     label:'第1章 工程概述',    default:true},
+    {id:'ex-ch2',     label:'第2章 地盤條件',    default:true},
+    {id:'ex-ch3',     label:'第3章 開挖計畫',    default:true},
+    {id:'ex-ch4',     label:'第4章 擋土支撐',    default:true},
+    {id:'ex-ch5',     label:'第5章 監測計畫',    default:true},
+  ],
+  earthwork: [
+    {id:'cover',label:'封面',default:true},
+    {id:'review',label:'審查核章表',default:true},
+    {id:'toc',label:'目錄',default:true},
+    {id:'ew-ch1',label:'第1章 工程概述',default:true},
+    {id:'ew-ch2',label:'第2章 土方量計算',default:true},
+    {id:'ew-ch3',label:'第3章 暫置計畫',default:true},
+    {id:'ew-ch4',label:'第4章 防塵計畫',default:true},
+  ],
+  runoff: [
+    {id:'cover',label:'封面',default:true},
+    {id:'review',label:'審查核章表',default:true},
+    {id:'toc',label:'目錄',default:true},
+    {id:'ro-ch1',label:'第1章 工程概述',default:true},
+    {id:'ro-ch2',label:'第2章 逕流量計算',default:true},
+    {id:'ro-ch3',label:'第3章 沉砂池設計',default:true},
+    {id:'ro-ch4',label:'第4章 品質管理',default:true},
+  ],
+  planting: [
+    {id:'cover',label:'封面',default:true},
+    {id:'review',label:'審查核章表',default:true},
+    {id:'toc',label:'目錄',default:true},
+    {id:'pl-ch1',label:'第1章 工程概述',default:true},
+    {id:'pl-ch2',label:'第2章 植栽種類',default:true},
+    {id:'pl-ch3',label:'第3章 施工程序',default:true},
+    {id:'pl-ch4',label:'第4章 養護計畫',default:true},
+  ],
+  quality: [
+    {id:'cover',  label:'封面',                         default:true},
+    {id:'review', label:'送審核章表',                   default:true},
+    {id:'toc',    label:'目錄',                         default:true},
+    {id:'q-ch1',  label:'壹、計畫範圍',                 default:true},
+    {id:'q-ch2',  label:'貳、管理權責及分工',            default:true},
+    {id:'q-ch3',  label:'參、施工要領',                 default:true},
+    {id:'q-ch4',  label:'肆、品質管理標準',              default:true},
+    {id:'q-ch5',  label:'伍、材料與設備及施工檢驗程序',  default:true},
+    {id:'q-ch6',  label:'陸、設備功能運轉檢測程序及標準',default:true},
+    {id:'q-ch7',  label:'柒、自主檢查表',               default:true},
+    {id:'q-ch8',  label:'捌、不合格品之管制',            default:true},
+    {id:'q-ch9',  label:'玖、矯正與預防措施',            default:true},
+    {id:'q-ch10', label:'拾、內部品質稽核',              default:true},
+    {id:'q-ch11', label:'拾壹、文件紀錄管理系統',        default:true},
+  ],
+};
+
+var PLAN_PARAMS_HTML = {
+  scaffold: `
+    <div class="section-title" style="margin-top:0;">施工架參數</div>
+    <label>施工架總面積 (m²)</label><input type="text" id="sc-area" value="17,438" oninput="refreshPreview()">
+    <div class="row2">
+      <div><label>繫牆桿垂直間距 (m)</label><input type="number" id="sc-wall-v" value="5.5" step="0.5" oninput="refreshPreview()"></div>
+      <div><label>繫牆桿水平間距 (m)</label><input type="number" id="sc-wall-h" value="7.5" step="0.5" oninput="refreshPreview()"></div>
+    </div>
+    <label>施工架與結構體間距 (cm)</label><input type="number" id="sc-gap" value="20" oninput="refreshPreview()">
+    <label>斜屏設置頻率（每X層）</label><input type="number" id="sc-slope-n" value="5" oninput="refreshPreview()">
+  `,
+  'formwork-calc': `
+    <div class="section-title" style="margin-top:0;">樓板尺寸</div>
+    <div class="row2">
+      <div><label>長 (m)</label><input type="number" id="fc-L" value="15.6" step="0.1" oninput="refreshPreview()"></div>
+      <div><label>寬 (m)</label><input type="number" id="fc-W" value="16.1" step="0.1" oninput="refreshPreview()"></div>
+    </div>
+    <div class="row2">
+      <div><label>版厚 (m)</label><input type="number" id="fc-t" value="0.30" step="0.01" oninput="refreshPreview()"></div>
+      <div><label>樓層高 (m)</label><input type="number" id="fc-H" value="2.8" step="0.1" oninput="refreshPreview()"></div>
+    </div>
+    <label>支撐系統</label>
+    <select id="fc-sys" oninput="refreshPreview()">
+      <option value="H175">H175×175型鋼 + 調整式鋼管</option>
+      <option value="pipe">調整式鋼管（全高）</option>
+    </select>
+    <div class="row2">
+      <div><label>縱向梁間距 (m)</label><input type="number" id="fc-sv" value="0.8" step="0.1" oninput="refreshPreview()"></div>
+      <div><label>鋼支柱間距 (m)</label><input type="number" id="fc-sp" value="0.6" step="0.1" oninput="refreshPreview()"></div>
+    </div>
+  `,
+};
+
+// ─── Helpers ──────────────────────────────────────────
+function v(id){var el=document.getElementById(id);return el?el.value:'';}
+function checked(id){var el=document.getElementById(id);return el?el.checked:false;}
+
+function dateToROC(d){
+  if(!d)return'';
+  var p=d.split('-');if(p.length<3)return d;
+  return (parseInt(p[0])-1911)+' 年 '+parseInt(p[1])+' 月 '+parseInt(p[2])+' 日';
+}
+
+function submitDateStr(){
+  var d=v('p-submit-date');
+  if(!d){var n=new Date();return (n.getFullYear()-1911)+' 年 '+(n.getMonth()+1)+' 月 '+n.getDate()+' 日';}
+  return dateToROC(d);
+}
+
+function ordinal(n){return ['第一','第二','第三','第四','第五','第六','第七','第八','第九','第十'][n-1]||('第'+n);}
+
+// ─── Switching ────────────────────────────────────────
+function switchLTab(t){
+  ['info','plan','mod'].forEach(function(x){
+    document.getElementById('tab-'+x).classList.toggle('active',x===t);
+    document.getElementById('panel-'+x).style.display=x===t?'':'none';
+  });
+}
+
+function setPlan(btn){
+  document.querySelectorAll('.plan-type-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  PLAN=btn.dataset.plan;
+  var pt=document.getElementById('p-plantype');
+  var names={scaffold:'施工架施工計畫書',formwork:'模板工程施工計畫書','formwork-calc':'模板支撐計算書',
+    concrete:'混凝土澆置計畫書',excavation:'開挖擋土支撐計畫書',earthwork:'土方暫置計畫書',
+    runoff:'逕流廢水計畫書',planting:'分項植栽計畫書',quality:'品質計畫書'};
+  if(pt&&names[PLAN])pt.value=names[PLAN];
+  // Update params
+  var pp=document.getElementById('plan-params');
+  var ppt=document.getElementById('plan-params-title');
+  pp.innerHTML=PLAN_PARAMS_HTML[PLAN]||'';
+  ppt.style.display=PLAN_PARAMS_HTML[PLAN]?'':'none';
+  // Re-init modules
+  initModules();
+  refreshPreview();
+}
+
+function initModules(){
+  var mods=PLAN_MODULES[PLAN]||[];
+  if(!MODULES[PLAN]){MODULES[PLAN]={};}
+  var ml=document.getElementById('module-list');
+  ml.innerHTML='';
+  mods.forEach(function(m){
+    if(MODULES[PLAN][m.id]===undefined)MODULES[PLAN][m.id]=m.default;
+    var div=document.createElement('div');div.className='module-item';
+    var cb=document.createElement('input');cb.type='checkbox';cb.id='mod-'+m.id;
+    cb.checked=MODULES[PLAN][m.id];
+    cb.addEventListener('change',function(){MODULES[PLAN][m.id]=this.checked;refreshPreview();});
+    var lbl=document.createElement('label');lbl.htmlFor='mod-'+m.id;lbl.textContent=m.label;
+    div.appendChild(cb);div.appendChild(lbl);ml.appendChild(div);
+  });
+}
+
+function isOn(id){return MODULES[PLAN]&&MODULES[PLAN][id]!==false;}
+
+// ─── Logo SVG ─────────────────────────────────────────
+var LOGO_SVG='<svg width="56" height="56" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="12" width="9" height="28" rx="1" fill="#0b1f3a"/><rect x="14" y="6" width="9" height="34" rx="1" fill="#0b1f3a"/><rect x="26" y="16" width="7" height="24" rx="1" fill="#0b1f3a"/><rect x="33" y="22" width="7" height="18" rx="1" fill="#0b1f3a"/><path d="M2 42 Q22 36 40 42" stroke="#c9a14a" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>';
+
+// ─── Page builders ────────────────────────────────────
+function pageCover(){
+  return '<div class="page cover">'+
+    '<div class="logo-wrap">'+LOGO_SVG+'</div>'+
+    '<div style="font-size:10pt;letter-spacing:.12em;color:#9a7b2a;font-weight:700;margin-bottom:6px;">STRUCTURAL ENGINEERING · 儒鴻結構</div>'+
+    '<div class="project-name">'+v('p-name')+'</div>'+
+    '<div class="plan-title">'+v('p-plantype')+'</div>'+
+    '<table class="meta-table">'+
+    '<tr><td>主辦機關：</td><td>'+v('p-owner')+'</td></tr>'+
+    '<tr><td>設計廠商：</td><td>'+v('p-designer')+'</td></tr>'+
+    '<tr><td>監造單位：</td><td>'+v('p-supervisor')+'</td></tr>'+
+    '<tr><td>承包廠商：</td><td>'+v('p-contractor')+'</td></tr>'+
+    '</table>'+
+    '<div class="date-line">中 華 民 國 '+(new Date().getFullYear()-1911)+' 年</div>'+
+    '<div class="page-num"></div>'+
+    '</div>';
+}
+
+function pageReview(){
+  var n=parseInt(v('p-submit-n'))||1;
+  var sigH='height:75px;border:1px solid #888;margin:4px 0;background:#fff;';
+  var cellL='width:28%;vertical-align:top;padding:6px 8px;font-size:9.5pt;border:1px solid #999;';
+  var cellR='vertical-align:top;padding:6px 8px;font-size:9.5pt;border:1px solid #999;';
+
+  function sigGrid(labels,names){
+    var cols=labels.map(function(lb,i){
+      return '<td style="text-align:center;border:1px solid #bbb;padding:4px;vertical-align:top;">'+
+        '<div style="font-size:9pt;margin-bottom:2px;">'+lb+'</div>'+
+        '<div style="'+sigH+'"></div>'+
+        '<div style="font-size:9pt;color:#555;margin-top:2px;">'+(names[i]||'')+'</div></td>';
+    }).join('');
+    return '<table style="width:100%;border-collapse:collapse;"><tr>'+cols+'</tr></table>';
+  }
+
+  return '<div class="page review-page">'+
+    '<h2 style="font-size:13pt;font-weight:700;text-align:center;margin-bottom:12px;border-bottom:2px solid #333;padding-bottom:6px;">'+
+      v('p-plantype')+'　送審核章表</h2>'+
+    '<table class="review-table" style="width:100%;border-collapse:collapse;font-size:10pt;">'+
+
+    // 工程名稱 + 合約編號
+    '<tr>'+
+    '<td style="'+cellL+'width:20%;font-weight:700;">工程名稱</td>'+
+    '<td style="'+cellR+'width:45%;">'+v('p-name')+'</td>'+
+    '<td style="'+cellL+'width:15%;font-weight:700;">合約編號</td>'+
+    '<td style="'+cellR+'">'+v('p-contract')+'</td>'+
+    '</tr>'+
+
+    // 提報次數 + 提報日期
+    '<tr>'+
+    '<td style="'+cellL+'font-weight:700;">提報次數</td>'+
+    '<td style="'+cellR+'">第 '+n+' 次</td>'+
+    '<td style="'+cellL+'font-weight:700;">提報日期</td>'+
+    '<td style="'+cellR+'">'+submitDateStr()+'</td>'+
+    '</tr>'+
+
+    // 承攬廠商 header
+    '<tr><td colspan="4" style="background:#e8e8e8;font-weight:700;padding:5px 8px;border:1px solid #999;">'+
+    '承攬廠商（提報單位）：'+v('p-contractor')+'</td></tr>'+
+
+    // 承攬廠商 signatures
+    '<tr>'+
+    '<td style="'+cellL+'text-align:center;">'+
+      '<div style="font-size:9pt;margin-bottom:4px;">蓋公司章</div>'+
+      '<div style="'+sigH+'min-height:85px;"></div>'+
+    '</td>'+
+    '<td colspan="3" style="'+cellR+'padding:6px;">'+
+      sigGrid(
+        ['專任技師','工地負責人','品管人員'],
+        [v('p-engineer'),v('p-site-mgr'),v('p-qc')]
+      )+
+    '</td>'+
+    '</tr>'+
+
+    // 監造單位 header
+    '<tr><td colspan="4" style="background:#e8e8e8;font-weight:700;padding:5px 8px;border:1px solid #999;">'+
+    '監造單位：'+v('p-supervisor')+'</td></tr>'+
+
+    // 監造審查結果 + 簽章
+    '<tr>'+
+    '<td colspan="2" style="'+cellL+'vertical-align:top;width:auto;">'+
+      '<b>審查結果：</b><br>'+
+      '□ 依修正意見重新提報<br>'+
+      '&emsp;（限定提報日期：　　　年　　月　　日）<br>'+
+      '□ 核定&emsp;□ 審查通過<br><br>'+
+      '函文日期：　　　年　　月　　日<br>'+
+      '函文文號：'+
+    '</td>'+
+    '<td style="'+cellR+'text-align:center;width:22%;">'+
+      '<div style="font-size:9pt;margin-bottom:4px;">蓋公司章</div>'+
+      '<div style="'+sigH+'min-height:85px;"></div>'+
+    '</td>'+
+    '<td style="'+cellR+'text-align:center;width:22%;">'+
+      '<div style="font-size:9pt;margin-bottom:4px;">監造主管技師<br>現場監造主管</div>'+
+      '<div style="'+sigH+'min-height:85px;"></div>'+
+    '</td>'+
+    '</tr>'+
+
+    // 工程主辦單位 header
+    '<tr><td colspan="4" style="background:#e8e8e8;font-weight:700;padding:5px 8px;border:1px solid #999;">'+
+    '工程主辦單位：'+v('p-owner')+'</td></tr>'+
+
+    // 主辦機關備查/核定
+    '<tr>'+
+    '<td colspan="4" style="'+cellR+'vertical-align:top;padding:10px 12px;min-height:60px;">'+
+      '□ 依審查意見重新提報（限定提報日期：　　　年　　月　　日）<br>'+
+      '□ 備查&emsp;□ 核定<br><br>'+
+      '函文日期：　　　年　　月　　日&emsp;&emsp;&emsp;函文文號：'+
+    '</td>'+
+    '</tr>'+
+
+    '</table>'+
+    '<div style="margin-top:14px;font-size:9pt;color:#333;text-align:center;border-top:1px solid #ccc;padding-top:8px;">'+
+    '＊本計畫書雖經審查通過，仍不能免除廠商應負之責任</div>'+
+    '<div class="page-num"></div>'+
+    '</div>';
+}
+
+function pageTOC(chapters){
+  var rows='';
+  var pg=3;
+  chapters.forEach(function(c){
+    rows+='<div class="toc-item"><span class="ch">'+c+'</span><span class="pg">'+pg+'</span></div>';
+    pg+=2;
+  });
+  return '<div class="page toc">'+
+    '<h2>目　錄</h2>'+rows+
+    '<div class="page-num">i</div>'+
+    '</div>';
+}
+
+// ─── SCAFFOLD plan pages ───────────────────────────────
+function pagesScaffold(){
+  var out='';
+  var wv=v('sc-wall-v')||'5.5';
+  var wh=v('sc-wall-h')||'7.5';
+  var gap=v('sc-gap')||'20';
+  var sn=v('sc-slope-n')||'5';
+  var area=v('sc-area')||'17,438';
+  var dur=v('p-duration')||'550';
+
+  // Chapter 1
+  if(isOn('sc-ch1'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">第一章、工項概述</div>'+
+
+    '<div class="sub-title">1.1 工程概要</div>'+
+    '<p>1. 工程名稱：'+v('p-name')+'。</p>'+
+    '<p>2. 工程位置：'+v('p-loc')+'。</p>'+
+    '<p>3. 主辦機關：'+v('p-owner')+'。</p>'+
+    '<p>4. 設計廠商：'+v('p-designer')+'。</p>'+
+    '<p>5. 監造廠商：'+v('p-supervisor')+'。</p>'+
+    '<p>6. 施工廠商及專任工程人員：'+v('p-contractor')+'、'+v('p-engineer')+'。</p>'+
+    '<p>7. 工程期限：開工之日起 '+dur+' 日曆天竣工。</p>'+
+    '<p>8. 契約金額：新台幣 '+v('p-amount')+' 元整。</p>'+
+    '<p>9. 施工架面積：約 '+area+' M²（含外部施工架、室內工作架等）。</p>'+
+
+    '<div class="sub-title">1.2 法源</div>'+
+    '<p>本分項施工計畫書為求確保作業人員施作安全、並符合勞工安全檢查項目，均按勞委會於民國九十七年八月二十八日之『框式施工架作業安全指引及檢查重點』及相關法令編寫。步驟流程所提及之安全母索支柱工法、扶手先行工法、捲揚式防墜器、背負式安全帶等工法，均視工地現場情況之需求選用；或按照分項工程合約書協議之同等安全之工法進行施工作業。</p>'+
+
+    '<div class="sub-title">1.3 品質管理人員方式要點</div>'+
+    '<ul>'+
+    '<li>由施工架作業主管決定作業方式，並分配員工作業，確實檢查所有施工用機具、工具、安全帶、安全帽等相關安全性之項目，注意其缺失及使用情況。</li>'+
+    '<li>嚴禁與作業無關之人員涉入施工中工程，注意作業區域之安全，防止墜落或倒塌事故。</li>'+
+    '<li>構築人員對施工架之組立方式與圖樣，須十分瞭解。</li>'+
+    '<li>施工架作業主管必須告知施工人員組立、拆除或變更事項之時間與範圍。</li>'+
+    '<li>使用中之施工架至少每周檢查一次，並妥為保存記錄；颱風前後應詳細檢查。</li>'+
+    '</ul>'+
+
+    '<div class="sub-title">1.4 施工架施工人員編組</div>'+
+    '<p>施工架工程現場由「施工架作業主管（現場工程師）」主導工作進度，控制品質及施工架安全衛生管理相關事宜，下設安衛組、繪圖人員、工地領班及施作人員等，如有需要得視現場工程師執行能力兼任各職。</p>'+
+
+    '<div class="sub-title">1.5 施工人員職稱及工作職掌</div>'+
+    '<table class="content-table">'+
+    '<tr><th>職稱</th><th>人數</th><th>職掌</th></tr>'+
+    '<tr><td>施工架工程現場工程師（施工架作業主管）</td><td>一人</td><td>主導工作進度，控制品質及施工架安全衛生管理等相關事宜全權處理負責人</td></tr>'+
+    '<tr><td>安衛組</td><td>一人</td><td>現場施工安全衛生管理及教育訓練規劃</td></tr>'+
+    '<tr><td>繪圖人員</td><td>一人</td><td>施工圖說繪製</td></tr>'+
+    '<tr><td>工地領班</td><td>一人</td><td>協助現場工程師及施工相關事宜等作業</td></tr>'+
+    '<tr><td>施作人員</td><td>若干人</td><td>協助完成工地作業</td></tr>'+
+    '</table>'+
+    '<div class="page-num">1</div>'+
+    '</div>';
+
+  // Chapter 2
+  if(isOn('sc-ch2'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">第二章、施工方法與步驟</div>'+
+
+    '<div class="sub-title">2.1 施工架工程搭設作業流程</div>'+
+    '<div class="flow-box">'+
+    '<div class="flow-step"><div class="num">S1</div><div><b>場地勘查</b>：確認地面堅實。接觸面軟弱時，先以木板或調整座舖設，必要時改用懸吊三角托架架設。設置禁止進入標示，作業主管須在場監督。</div></div>'+
+    '<div class="flow-step"><div class="num">S2</div><div><b>材料檢查</b>：材料不得有顯著之損壞、變形或腐蝕。</div></div>'+
+    '<div class="flow-step"><div class="num">S3</div><div><b>防護具及工具檢查</b>：安全帶、安全帽、防滑鞋、安全索；工具應綁好；人員狀態良好。</div></div>'+
+    '<div class="flow-step"><div class="num">S4</div><div><b>施工架組立</b>（含繫牆桿、交叉拉桿及水平板）：高處作業應先設上下設備、雙側交叉拉桿、中欄杆及安全母索，勞工確實使用安全帶。調整座應架設穩固，依設計確實架設，天候不佳應停止作業。</div></div>'+
+    '<div class="flow-step"><div class="num">S5</div><div><b>架設樓梯、護網及帆布、斜屏</b>（每 '+sn+' 層設置一次）：高處作業先設上下設備、安全欄杆及安全母索，每層架以長條型防墜網鋪滿。</div></div>'+
+    '</div>'+
+
+    '<div class="sub-title">2.2 施工架工程拆除作業流程</div>'+
+    '<div class="flow-box">'+
+    '<div class="flow-step"><div class="num">S1</div><div><b>作業準備</b>：設置禁止進入標示，作業主管在場監督，先完成安全母索架設，確認起重設備合格。</div></div>'+
+    '<div class="flow-step"><div class="num">S2</div><div><b>拆除防墜網、防塵網及帆布、樓梯、水平踏板、交叉拉桿、中欄杆、立架、插銷</b>：材料以繩索緩慢吊放至地面。</div></div>'+
+    '<div class="flow-step"><div class="num">S3</div><div><b>拆除繫牆桿</b>：應依序逐層拆除，不得一次拆除所有繫牆桿；完成後材料運送至地面整理。</div></div>'+
+    '<div class="flow-step"><div class="num">S4</div><div><b>拆除三角架、調整座及夾板</b>：拆除夾板前，應先清除夾板上方物品。逐層完成。</div></div>'+
+    '</div>'+
+
+    '<div class="sub-title">2.3 施工架工程施工前作業</div>'+
+    '<ul>'+
+    '<li>確認將施工之時間及區域等相關聯絡是否完備。</li>'+
+    '<li>選定材料堆置場所及出入動線勘查。</li>'+
+    '</ul>'+
+
+    '<div class="sub-title">2.4 搭設組立施工方式</div>'+
+    '<ul>'+
+    '<li>由施工架作業主管指揮督導，另由技術人員負責安裝架設。</li>'+
+    '<li>繫牆桿之固定形式為壁連座，應於混凝土澆鑄完成拆模後再行挽架固定；設置方式以垂直方向 '+wv+' m、水平方向 '+wh+' m 以下設置一根。</li>'+
+    '<li>施工架與結構體間之距離固定保持 '+gap+' 公分，以便於模板施作人員作業。</li>'+
+    '<li>裝設斜鐵屏，斜鐵屏應於每 '+sn+' 層樓裝設一次，裝設時應緊固，以防物體不慎墜落。</li>'+
+    '</ul>'+
+
+    '<div class="sub-title">2.5 施工內容流程與安全事項</div>'+
+    '<ul>'+
+    '<li>施工架進場前人員需完成安全衛生教育訓練。</li>'+
+    '<li>作業人員應確實使用各類防護用具，包括安全帽、安全帶、工作手套等。</li>'+
+    '<li>施工前嚴禁作業人員飲用含有酒精成分之飲料及食品。</li>'+
+    '<li>起重設備進場需確認合格證明文件，操作手及吊掛人員均應具有訓練合格結業證書。</li>'+
+    '</ul>'+
+    '<div class="page-num">2</div>'+
+    '</div>';
+
+  // Chapter 3
+  if(isOn('sc-ch3'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">第三章、施工機具</div>'+
+
+    '<div class="sub-title">3.1 機具設備及手工具</div>'+
+    '<ul>'+
+    '<li>運輸機具設備：吊卡車、吊車、纜繩及其他用具。</li>'+
+    '<li>手工具：鉗子、板手及其他用具。</li>'+
+    '</ul>'+
+
+    '<div class="sub-title">3.2 防護用具</div>'+
+    '<p>安全帽、防滑手套、安全鞋、安全帶、安全網、護目鏡等。</p>'+
+
+    '<div class="sub-title">3.3 使用材料</div>'+
+    '<p>本工程使用門型框式鋼管施工架，主要材料規格如下：</p>'+
+    '<table class="content-table">'+
+    '<tr><th>構件名稱</th><th>外徑 (mm)</th><th>容許誤差</th><th>厚度 (mm)</th><th>容許誤差</th></tr>'+
+    '<tr><td>柱腳及橫架</td><td>42.7</td><td>±0.25</td><td>2.0</td><td>±0.3</td></tr>'+
+    '<tr><td>補強鋼材</td><td>34.0</td><td>±0.25</td><td>2.0</td><td>±0.3</td></tr>'+
+    '<tr><td>柱腳接頭</td><td>35.0</td><td>±0.25</td><td>2.0</td><td>±0.3</td></tr>'+
+    '<tr><td>交叉拉桿</td><td>21.7</td><td>±0.25</td><td>2.0</td><td>±0.3</td></tr>'+
+    '</table>'+
+    '<p style="margin-top:8px;">所有施工材料均採用鍍鋅鋼管，有扭曲、變型之材料皆不宜進場施作。防塵網規格：1800mm×3450mm（2mm 孔徑/密度）。</p>'+
+    '<div class="page-num">3</div>'+
+    '</div>';
+
+  // Chapter 4
+  if(isOn('sc-ch4'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">第四章、預定作業進度</div>'+
+    '<p>本分項施工計畫屬於假設工程，施作進度配合承攬廠商之地下與地上結構工程施作。</p>'+
+    '<table class="content-table">'+
+    '<tr><th>工項</th><th>所需工作天</th><th>施作時間點</th></tr>'+
+    '<tr><td>預埋鐵件</td><td>0.5天</td><td>混凝土澆置前一日</td></tr>'+
+    '<tr><td>繫牆桿固定</td><td>含於主結構安裝</td><td>模板拆除後</td></tr>'+
+    '<tr><td>主結構安裝（水平、叉管等）</td><td>1天</td><td>繫牆桿固定後</td></tr>'+
+    '<tr><td>附屬配件安裝（網子等）</td><td>1天</td><td>主結構安裝後</td></tr>'+
+    '<tr><td>其他項目（三角架、斜屏）</td><td>1天</td><td>視工地進度而定</td></tr>'+
+    '</table>'+
+    '<p>實際施作進度將依工地主管指示配合整體工程進度調整，若有範圍變更或異動，施工架作業主管應配合告知施作人員。</p>'+
+    '<div class="page-num">4</div>'+
+    '</div>';
+
+  // Chapter 5
+  if(isOn('sc-ch5'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">第五章、分項品質計畫</div>'+
+    '<p>施工架工程於進場前、中、後均需針對材料及施工組拆過程有良好的品質控管。</p>'+
+
+    '<div class="sub-title">5.1 檢查項目及時間</div>'+
+    '<ul>'+
+    '<li><b>材料檢查：</b>所有進場之材料於本公司料場出貨前先進行檢查，物料到達現場吊料時再進行二次檢查。</li>'+
+    '<li><b>施工安全流程檢查：</b>所有施工架人員於每次每日施作前，由施工架組配作業主管實施勤前工具箱會議，確實實施檢點。</li>'+
+    '<li><b>施工架完成結構：</b>每週實施自主檢查、每次施工進度完成後陪同業主檢查驗收，以及颱風、地震等重天然災害後。</li>'+
+    '</ul>'+
+
+    '<div class="sub-title">5.2 檢查標準</div>'+
+    '<table class="content-table">'+
+    '<tr><th>檢查項目</th><th>檢查標準</th></tr>'+
+    '<tr><td>施工架、水平踏板</td><td>不得有顯著之損壞、變形或腐蝕</td></tr>'+
+    '<tr><td>水平踏板、扶手先行</td><td>應設金屬扣鎖及防脫落鉤，未具防脫落鉤者以鐵絲固定改善</td></tr>'+
+    '<tr><td>交叉拉桿及下拉桿</td><td>內、外側設置</td></tr>'+
+    '<tr><td>兩端立架及轉角</td><td>設置護欄</td></tr>'+
+    '<tr><td>鋼索安全母索</td><td>架設高 1.1M 之 9mm 鋼索</td></tr>'+
+    '<tr><td>長條型防墜網</td><td>施工架工作台與構造物間之開口寬度超過 20 公分時</td></tr>'+
+    '<tr><td>繫牆桿（壁連座）</td><td>垂直方向 '+wv+' 公尺、水平方向 '+wh+' 公尺以下</td></tr>'+
+    '<tr><td>斜屏</td><td>每 '+sn+' 層樓施作一次</td></tr>'+
+    '<tr><td>防塵網</td><td>避免物品墜落及灰塵飛出，每層架施作</td></tr>'+
+    '</table>'+
+    '<div class="page-num">5</div>'+
+    '</div>';
+
+  // Chapter 6
+  if(isOn('sc-ch6'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">第六章、分項作業安全衛生管理與設施設置措施</div>'+
+
+    '<div class="sub-title">6.1 材料管理</div>'+
+    '<ul>'+
+    '<li>本公司所有材料均在廠內進行人工及機械式保養與檢查。</li>'+
+    '<li>材料出廠運送至工地前，均已篩選剔除出表面嚴重腐蝕、扭曲、變型的材料。</li>'+
+    '<li>配合工地主管指示之堆置地點放置並排列整齊。</li>'+
+    '<li>施工架拆除後迅速撤離。</li>'+
+    '</ul>'+
+
+    '<div class="sub-title">6.2 安衛管理</div>'+
+    '<ul>'+
+    '<li>配合政令及注意事項，依照勞委會所頒佈之勞工安全衛生檢查細則執行，確實遵照辦理。</li>'+
+    '<li>作業主管與施作人員均需有職前訓練之教育，並領有證照。</li>'+
+    '</ul>'+
+
+    '<div class="sub-title">6.3 施工架工程品質管理標準</div>'+
+    '<table class="content-table" style="font-size:9pt;">'+
+    '<tr><th>階段</th><th>管理項目</th><th>管理標準</th><th>檢查時間</th><th>不合標準處置</th></tr>'+
+    '<tr><td>計畫階段</td><td>應力檢核</td><td>符合結構安全</td><td>規劃設計時</td><td>立即修正</td></tr>'+
+    '<tr><td>計畫階段</td><td>製作施工計畫書及繪製施工圖</td><td>符合法規及業主要求</td><td>施工前</td><td>檢討修正</td></tr>'+
+    '<tr><td>施工階段</td><td>施工架進場材料檢查</td><td>不得有顯著損壞、變形、腐蝕</td><td>進場時</td><td>拒絕入場更換</td></tr>'+
+    '<tr><td>施工階段</td><td>每日施工前勤前會議</td><td>全員確實執行</td><td>每日施作前</td><td>立即改善</td></tr>'+
+    '<tr><td>施工階段</td><td>每週自主檢查</td><td>依自主檢查表確認</td><td>每週</td><td>立即修正</td></tr>'+
+    '<tr><td>施工階段</td><td>颱風前後特別檢查</td><td>確認所有繫牆桿、連接件牢固</td><td>天然災害前後</td><td>立即修正</td></tr>'+
+    '</table>'+
+    '<div class="page-num">6</div>'+
+    '</div>';
+
+  // Chapter 7
+  if(isOn('sc-ch7'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">第七章、拆架計畫書</div>'+
+
+    '<div class="sub-title">7.1 聯絡人資料</div>'+
+    '<table class="content-table">'+
+    '<tr><th>職稱</th><th>姓名</th><th>聯絡電話</th></tr>'+
+    '<tr><td>施工廠商（工地負責人）</td><td></td><td></td></tr>'+
+    '<tr><td>監造廠商（現場監工）</td><td></td><td></td></tr>'+
+    '</table>'+
+
+    '<div class="sub-title">7.2 施工架拆除安全作業標準</div>'+
+    '<ul>'+
+    '<li>拆卸作業前，施工架組配作業主管須確認作業範圍無異常，再指揮勞工從事拆卸作業。</li>'+
+    '<li>拆卸時作業人員以安全帶扣住下一層之安全母索以防墜落發生。</li>'+
+    '<li>所有拆除之材料，不可由上往下任意丟擲，需以繩索緩慢吊放至地面。</li>'+
+    '<li>繫牆桿應依序逐層拆除，不得一次拆除所有繫牆桿。</li>'+
+    '<li>拆架時應注意施工，不得破壞與污染其他已完成之工程。</li>'+
+    '<li>施工架拆除後盡速運離工地，並堆放於預定之規劃位置，排放平穩整齊。</li>'+
+    '</ul>'+
+
+    '<div class="sub-title">7.3 施工架拆卸作業之潛在危害防止對策</div>'+
+    '<table class="content-table" style="font-size:9.5pt;">'+
+    '<tr><th>危害類型</th><th>防止對策</th></tr>'+
+    '<tr><td>倒塌</td><td>拆除前確認基腳下沈、滑動之狀況；逐層拆除，禁止先拆繫牆桿後再拆施工架。</td></tr>'+
+    '<tr><td>墜落</td><td>施工架拆卸高度≥1.5M 須設置安全上下設備；禁止在施工架上使用梯子、合梯或踏凳；確實使用安全帶及安全母索。</td></tr>'+
+    '<tr><td>飛落</td><td>卸放材料、器具、工具等使用吊索或吊帶；設置警示區嚴禁無關人員進入拆卸作業區域。</td></tr>'+
+    '<tr><td>感電</td><td>確認鄰近電線及電氣設備安全距離；必要時向電力公司申請停電作業。</td></tr>'+
+    '</table>'+
+
+    '<div class="sub-title">7.4 施工架拆卸安全檢查表</div>'+
+    '<table class="content-table" style="font-size:9pt;">'+
+    '<tr><th>檢查項目</th><th>合格</th><th>不合格</th></tr>'+
+    '<tr><td>作業主管是否在場監督勞工拆卸作業</td><td>□</td><td>□</td></tr>'+
+    '<tr><td>是否分配勞工工作並告知作業時間、範圍及順序</td><td>□</td><td>□</td></tr>'+
+    '<tr><td>拆卸人員安全帽及安全帶是否確實使用</td><td>□</td><td>□</td></tr>'+
+    '<tr><td>施工架組配是否架設高 1.1M 之 9mm 鋼索安全母索</td><td>□</td><td>□</td></tr>'+
+    '<tr><td>是否設置警示區嚴禁無關人員進入</td><td>□</td><td>□</td></tr>'+
+    '<tr><td>從事吊裝之危險性機械合格證是否齊全</td><td>□</td><td>□</td></tr>'+
+    '<tr><td>拆除時繫牆桿是否逐層拆除（禁止一次全拆）</td><td>□</td><td>□</td></tr>'+
+    '</table>'+
+
+    '<div class="doc-footer">⚠ 本計畫書為施工參考文件，設計及施工結果仍須由依法登記之結構技師或其他相關技師簽證並負最終法律責任。</div>'+
+    '<div class="page-num">7</div>'+
+    '</div>';
+
+  return out;
+}
+
+// ─── QUALITY PLAN pages (11 official chapters) ────────
+function pagesQuality(){
+  var out='';
+  var nm=v('p-name');var lc=v('p-loc');var ow=v('p-owner');
+  var sv=v('p-supervisor');var ct=v('p-contractor');var eng=v('p-engineer');
+  var dur=v('p-duration')||'550';var amt=v('p-amount');
+
+  if(isOn('q-ch1'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">壹、計畫範圍</div>'+
+
+    '<div class="sub-title">一、依據</div>'+
+    '<ol style="margin:0 0 10px 2em;"><li>公共工程施工品質管理作業要點。</li>'+
+    '<li>公共工程品質管理訓練班結業合格規定。</li>'+
+    '<li>本工程施工綱要規範及契約圖說。</li>'+
+    '<li>各相關法令規章。</li></ol>'+
+
+    '<div class="sub-title">二、工程概要</div>'+
+    '<table class="content-table">'+
+    '<tr><td style="width:30%;font-weight:600;">工程名稱</td><td>'+nm+'</td></tr>'+
+    '<tr><td style="font-weight:600;">工程地點</td><td>'+lc+'</td></tr>'+
+    '<tr><td style="font-weight:600;">主辦機關</td><td>'+ow+'</td></tr>'+
+    '<tr><td style="font-weight:600;">監造單位</td><td>'+sv+'</td></tr>'+
+    '<tr><td style="font-weight:600;">承攬廠商</td><td>'+ct+'</td></tr>'+
+    '<tr><td style="font-weight:600;">專任工程人員</td><td>'+eng+'</td></tr>'+
+    '<tr><td style="font-weight:600;">工程期限</td><td>開工之日起 '+dur+' 日曆天</td></tr>'+
+    '<tr><td style="font-weight:600;">契約金額</td><td>新台幣 '+amt+' 元整</td></tr>'+
+    '</table>'+
+
+    '<div class="sub-title">三、主要施作項目</div>'+
+    '<p>依本工程契約規定之各項施工項目，包含土木、結構及相關附屬設施工程。</p>'+
+
+    '<div class="sub-title">四、施工位置</div>'+
+    '<p>本工程施工位置位於'+lc+'，詳如契約圖說所示。</p>'+
+
+    '<div class="sub-title">五、適用對象</div>'+
+    '<p>本品質計畫書適用於本工程所有施工人員、材料設備供應商及相關分包廠商。</p>'+
+
+    '<div class="sub-title">六、適用時間</div>'+
+    '<p>自本工程開工日起至竣工驗收完成為止。</p>'+
+
+    '<div class="sub-title">七、名詞定義</div>'+
+    '<table class="content-table">'+
+    '<tr><th>名詞</th><th>說明</th></tr>'+
+    '<tr><td>品質計畫書</td><td>為達成工程品質目標，說明品質管理作業方式及程序之文件。</td></tr>'+
+    '<tr><td>自主檢查</td><td>廠商於施工中自行依規定項目及標準進行之查核作業。</td></tr>'+
+    '<tr><td>不合格品</td><td>不符合契約規定之材料、設備或施工成果。</td></tr>'+
+    '<tr><td>矯正措施</td><td>為消除已發現之不合格原因，防止再次發生之措施。</td></tr>'+
+    '<tr><td>預防措施</td><td>為消除潛在不合格原因，防止問題發生之措施。</td></tr>'+
+    '</table>'+
+    '<div class="page-num">1</div>'+
+    '</div>';
+
+  if(isOn('q-ch2'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">貳、管理權責及分工</div>'+
+
+    '<div class="sub-title">一、組織架構</div>'+
+    '<p>本工程品質管理組織以「計畫、執行、查核、行動（PDCA）」為核心，建立完整品質保證體系。組織架構由上而下分為：專任工程人員、品管人員、工地主任及各施工班組。</p>'+
+    '<table class="content-table">'+
+    '<tr><th>層級</th><th>人員</th><th>職掌</th></tr>'+
+    '<tr><td>第一層</td><td>專任工程人員</td><td>品質計畫書審核、重大品質問題決策、對外協調聯繫</td></tr>'+
+    '<tr><td>第二層</td><td>品管工程師（品管人員）</td><td>品質計畫執行監督、自主檢查管理、不合格品處置</td></tr>'+
+    '<tr><td>第三層</td><td>工地主任</td><td>施工作業協調、工程進度掌控、工地環境管理</td></tr>'+
+    '<tr><td>第四層</td><td>各作業班組</td><td>依施工計畫書執行工項、填寫施工紀錄</td></tr>'+
+    '</table>'+
+
+    '<div class="sub-title">二、人員資格及職責</div>'+
+    '<table class="content-table">'+
+    '<tr><th>職稱</th><th>最低資格</th><th>主要職責</th></tr>'+
+    '<tr><td>專任工程人員</td><td>依法登記之技師</td><td>簽認品質計畫書、督導施工品質、技術指導</td></tr>'+
+    '<tr><td>品管工程師</td><td>公共工程品管訓練班結業</td><td>執行品質管理、稽核、紀錄管理</td></tr>'+
+    '<tr><td>工地主任</td><td>工地主任訓練合格</td><td>現場施工管理、安全衛生管理</td></tr>'+
+    '</table>'+
+
+    '<div class="sub-title">三、分包管理</div>'+
+    '<p>各分包廠商須依本品質計畫書規定執行品質管理作業，並配合本公司品管人員之稽核查驗。</p>'+
+    '<div class="page-num">2</div>'+
+    '</div>';
+
+  if(isOn('q-ch3'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">參、施工要領</div>'+
+
+    '<div class="sub-title">一、施工前準備</div>'+
+    '<ul>'+
+    '<li>施工前應詳讀契約圖說，確認施工範圍及工程數量。</li>'+
+    '<li>辦理材料、設備進場審查，取得監造單位核可後方可使用。</li>'+
+    '<li>施工前召開工具箱會議，說明施工方法及安全注意事項。</li>'+
+    '<li>確認施工機具、設備之合格文件均在有效期限內。</li>'+
+    '</ul>'+
+
+    '<div class="sub-title">二、施工中管理</div>'+
+    '<ul>'+
+    '<li>依核定之施工計畫書確實施作，不得擅自更改施工方法。</li>'+
+    '<li>品管人員每日至施工現場確認施工品質，並填寫施工日誌。</li>'+
+    '<li>完成各施工階段後，填寫自主檢查表並請監造人員確認。</li>'+
+    '<li>施工中發現任何異常情況，立即停工並通報專任工程人員。</li>'+
+    '</ul>'+
+
+    '<div class="sub-title">三、施工後查驗</div>'+
+    '<ul>'+
+    '<li>各項工程完成後，依規定辦理分項驗收，取得監造單位核可。</li>'+
+    '<li>保存所有施工紀錄、試驗報告及檢驗合格文件。</li>'+
+    '<li>竣工圖說應反映實際施工情形，確實更新。</li>'+
+    '</ul>'+
+
+    '<div class="sub-title">四、主要工項施工流程</div>'+
+    '<div class="flow-box">'+
+    '<div class="flow-step"><div class="num">1</div><div><b>施工計畫審查</b>：送監造單位審核，取得核可後方可施工。</div></div>'+
+    '<div class="flow-step"><div class="num">2</div><div><b>材料/設備送審</b>：廠牌型號送審，取得核可後方可進場。</div></div>'+
+    '<div class="flow-step"><div class="num">3</div><div><b>施工中品質管控</b>：依自主檢查表逐項確認，不合格立即改善。</div></div>'+
+    '<div class="flow-step"><div class="num">4</div><div><b>驗收查驗</b>：完成後申請監造驗收，驗收合格後進行下一工項。</div></div>'+
+    '<div class="flow-step"><div class="num">5</div><div><b>紀錄歸檔</b>：所有品質文件依文件管理系統歸檔保存。</div></div>'+
+    '</div>'+
+    '<div class="page-num">3</div>'+
+    '</div>';
+
+  if(isOn('q-ch4'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">肆、品質管理標準</div>'+
+
+    '<div class="sub-title">一、材料品質標準</div>'+
+    '<p>本工程各項材料品質標準依契約規範及下列標準辦理：</p>'+
+    '<table class="content-table">'+
+    '<tr><th>材料類別</th><th>適用標準</th><th>最低要求</th></tr>'+
+    '<tr><td>混凝土</td><td>CNS 3090、CNS 13961</td><td>依設計圖說強度規定</td></tr>'+
+    '<tr><td>鋼筋</td><td>CNS 560</td><td>依設計圖說規格</td></tr>'+
+    '<tr><td>模板</td><td>契約規範</td><td>無明顯缺陷、變形</td></tr>'+
+    '<tr><td>填充砂石</td><td>CNS 490</td><td>依規範級配要求</td></tr>'+
+    '<tr><td>鋼材</td><td>CNS 2473</td><td>依設計規格</td></tr>'+
+    '</table>'+
+
+    '<div class="sub-title">二、施工品質管理標準</div>'+
+    '<table class="content-table">'+
+    '<tr><th>工項</th><th>管理項目</th><th>管理標準</th><th>檢查時機</th></tr>'+
+    '<tr><td>混凝土工程</td><td>坍度、強度</td><td>依設計規格，坍度允差±2.5cm</td><td>澆置前/後</td></tr>'+
+    '<tr><td>鋼筋工程</td><td>保護層、間距</td><td>保護層允差-10mm~+15mm</td><td>澆置前</td></tr>'+
+    '<tr><td>模板工程</td><td>尺寸、垂直度</td><td>允差±10mm，垂直度1/1000H</td><td>澆置前</td></tr>'+
+    '<tr><td>土方工程</td><td>壓實度</td><td>現場乾密度≥95% Proctor</td><td>每層填築後</td></tr>'+
+    '</table>'+
+
+    '<div class="sub-title">三、品質目標</div>'+
+    '<ul>'+
+    '<li>工程施工缺失改善率：100%。</li>'+
+    '<li>材料檢驗合格率：100%。</li>'+
+    '<li>自主檢查表完成率：100%。</li>'+
+    '<li>重大品質事故：零件。</li>'+
+    '</ul>'+
+    '<div class="page-num">4</div>'+
+    '</div>';
+
+  if(isOn('q-ch5'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">伍、材料與設備及施工檢驗程序</div>'+
+
+    '<div class="sub-title">一、材料及設備送審程序</div>'+
+    '<div class="flow-box">'+
+    '<div class="flow-step"><div class="num">1</div><div><b>廠商提送</b>：施工廠商填妥送審單，附上型錄、樣品、試驗報告等。</div></div>'+
+    '<div class="flow-step"><div class="num">2</div><div><b>品管審查</b>：品管人員審核文件完整性，確認符合規範要求。</div></div>'+
+    '<div class="flow-step"><div class="num">3</div><div><b>監造核可</b>：送監造單位審查，取得核可文件。</div></div>'+
+    '<div class="flow-step"><div class="num">4</div><div><b>進場管控</b>：憑核可文件方可進場，品管人員核對廠牌型號。</div></div>'+
+    '</div>'+
+
+    '<div class="sub-title">二、施工中檢驗程序</div>'+
+    '<table class="content-table">'+
+    '<tr><th>檢驗項目</th><th>檢驗時機</th><th>頻率</th><th>標準</th><th>執行人員</th></tr>'+
+    '<tr><td>混凝土取樣</td><td>澆置時</td><td>每100m³取一組</td><td>CNS規定</td><td>品管人員</td></tr>'+
+    '<tr><td>鋼筋位置查核</td><td>澆置前</td><td>每次澆置前</td><td>設計圖說</td><td>品管人員</td></tr>'+
+    '<tr><td>模板檢查</td><td>澆置前</td><td>每次澆置前</td><td>允差±10mm</td><td>品管人員</td></tr>'+
+    '<tr><td>壓實度試驗</td><td>每層回填後</td><td>每1000m²一點</td><td>≥95%</td><td>試驗室</td></tr>'+
+    '</table>'+
+
+    '<div class="sub-title">三、設備進場檢驗</div>'+
+    '<p>機電設備進場時，品管人員應核對廠牌、型號、規格與核可文件相符，並確認外觀無損傷。</p>'+
+    '<div class="page-num">5</div>'+
+    '</div>';
+
+  if(isOn('q-ch6'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">陸、設備功能運轉檢測程序及標準</div>'+
+
+    '<div class="sub-title">一、適用範圍</div>'+
+    '<p>本章適用於本工程施工完成後須進行功能測試之機電設備及相關系統。</p>'+
+
+    '<div class="sub-title">二、檢測前準備</div>'+
+    '<ul>'+
+    '<li>確認設備安裝完成，各管路、線路連接正確。</li>'+
+    '<li>取得設備廠商之操作說明書及試運轉程序。</li>'+
+    '<li>邀請監造人員、主辦機關代表到場見證。</li>'+
+    '</ul>'+
+
+    '<div class="sub-title">三、檢測程序</div>'+
+    '<div class="flow-box">'+
+    '<div class="flow-step"><div class="num">1</div><div><b>外觀檢查</b>：確認安裝正確、無損傷、接地良好。</div></div>'+
+    '<div class="flow-step"><div class="num">2</div><div><b>空載試運轉</b>：無載情況下試運轉，確認運轉正常無異音。</div></div>'+
+    '<div class="flow-step"><div class="num">3</div><div><b>負載測試</b>：依設計載量進行負載運轉測試，量測各項參數。</div></div>'+
+    '<div class="flow-step"><div class="num">4</div><div><b>記錄與確認</b>：填寫試運轉紀錄表，請各方代表簽認。</div></div>'+
+    '</div>'+
+
+    '<div class="sub-title">四、判定標準</div>'+
+    '<p>各項設備之功能測試標準依設備規範書及契約規定辦理。測試結果須符合設計要求，否則應進行調整後重新測試。</p>'+
+    '<div class="page-num">6</div>'+
+    '</div>';
+
+  if(isOn('q-ch7'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">柒、自主檢查表</div>'+
+    '<p>本工程各主要工項之自主檢查表如下，施工時應逐項確認：</p>'+
+
+    '<div class="sub-title">一、混凝土澆置前自主檢查表</div>'+
+    '<table class="content-table" style="font-size:9.5pt;">'+
+    '<tr><th style="width:5%">項次</th><th>檢查項目</th><th style="width:12%">合格</th><th style="width:12%">不合格</th><th style="width:20%">備註</th></tr>'+
+    '<tr><td>1</td><td>鋼筋規格、間距、彎鉤符合設計圖說</td><td style="text-align:center">□</td><td style="text-align:center">□</td><td></td></tr>'+
+    '<tr><td>2</td><td>混凝土保護層墊塊設置正確</td><td style="text-align:center">□</td><td style="text-align:center">□</td><td></td></tr>'+
+    '<tr><td>3</td><td>模板尺寸、位置符合圖說，支撐穩固</td><td style="text-align:center">□</td><td style="text-align:center">□</td><td></td></tr>'+
+    '<tr><td>4</td><td>模板清潔，脫模劑均勻塗佈</td><td style="text-align:center">□</td><td style="text-align:center">□</td><td></td></tr>'+
+    '<tr><td>5</td><td>預埋件位置正確並固定</td><td style="text-align:center">□</td><td style="text-align:center">□</td><td></td></tr>'+
+    '<tr><td>6</td><td>混凝土配比試驗合格</td><td style="text-align:center">□</td><td style="text-align:center">□</td><td></td></tr>'+
+    '</table>'+
+
+    '<div class="sub-title">二、土方回填自主檢查表</div>'+
+    '<table class="content-table" style="font-size:9.5pt;">'+
+    '<tr><th style="width:5%">項次</th><th>檢查項目</th><th style="width:12%">合格</th><th style="width:12%">不合格</th><th style="width:20%">備註</th></tr>'+
+    '<tr><td>1</td><td>回填材料符合規範規定</td><td style="text-align:center">□</td><td style="text-align:center">□</td><td></td></tr>'+
+    '<tr><td>2</td><td>每層回填厚度不超過30cm</td><td style="text-align:center">□</td><td style="text-align:center">□</td><td></td></tr>'+
+    '<tr><td>3</td><td>壓實度試驗結果≥95%</td><td style="text-align:center">□</td><td style="text-align:center">□</td><td></td></tr>'+
+    '<tr><td>4</td><td>頂面高程符合設計圖說</td><td style="text-align:center">□</td><td style="text-align:center">□</td><td></td></tr>'+
+    '</table>'+
+
+    '<div style="margin-top:10px;font-size:9.5pt;color:#555;">自主檢查人員：________________　日期：________________　監造確認：________________</div>'+
+    '<div class="page-num">7</div>'+
+    '</div>';
+
+  if(isOn('q-ch8'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">捌、不合格品之管制</div>'+
+
+    '<div class="sub-title">一、不合格品定義</div>'+
+    '<p>不符合契約規定、施工規範或設計圖說要求之材料、設備或施工成果，均視為不合格品。</p>'+
+
+    '<div class="sub-title">二、不合格品識別與隔離</div>'+
+    '<ul>'+
+    '<li>發現不合格品時，立即貼上「不合格」標示，與合格品隔離存放。</li>'+
+    '<li>不合格品不得使用於工程，待處置完成後方可解除管制。</li>'+
+    '</ul>'+
+
+    '<div class="sub-title">三、不合格品處置程序</div>'+
+    '<div class="flow-box">'+
+    '<div class="flow-step"><div class="num">1</div><div><b>識別標示</b>：發現時立即掛牌標示「不合格」，紀錄發現日期、地點、數量。</div></div>'+
+    '<div class="flow-step"><div class="num">2</div><div><b>原因分析</b>：品管人員查明不合格原因，填寫不合格品處理單。</div></div>'+
+    '<div class="flow-step"><div class="num">3</div><div><b>處置決定</b>：專任工程人員決定處置方式：退料、修補或讓步接受。</div></div>'+
+    '<div class="flow-step"><div class="num">4</div><div><b>通報監造</b>：通知監造單位，取得同意後方可執行處置。</div></div>'+
+    '<div class="flow-step"><div class="num">5</div><div><b>紀錄歸檔</b>：處置完成後填寫結案紀錄，歸檔保存。</div></div>'+
+    '</div>'+
+
+    '<div class="sub-title">四、不合格品處理紀錄表</div>'+
+    '<table class="content-table" style="font-size:9.5pt;">'+
+    '<tr><th>項目</th><th>說明</th></tr>'+
+    '<tr><td>不合格項目</td><td>&emsp;</td></tr>'+
+    '<tr><td>發現日期</td><td>&emsp;</td></tr>'+
+    '<tr><td>不合格原因</td><td>&emsp;</td></tr>'+
+    '<tr><td>處置方式</td><td>□ 退料 &emsp;□ 修補 &emsp;□ 讓步接受（需監造核可）</td></tr>'+
+    '<tr><td>處置結果</td><td>&emsp;</td></tr>'+
+    '<tr><td>品管人員簽章</td><td>&emsp;</td></tr>'+
+    '</table>'+
+    '<div class="page-num">8</div>'+
+    '</div>';
+
+  if(isOn('q-ch9'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">玖、矯正與預防措施</div>'+
+
+    '<div class="sub-title">一、矯正措施</div>'+
+    '<p>矯正措施係針對已發生之不合格事項，查明根本原因並採取措施，防止再次發生。</p>'+
+    '<div class="flow-box">'+
+    '<div class="flow-step"><div class="num">1</div><div><b>發現問題</b>：自主檢查、稽核或監造通知發現不合格。</div></div>'+
+    '<div class="flow-step"><div class="num">2</div><div><b>根本原因分析</b>：品管人員分析問題根源（人、機、料、法、環）。</div></div>'+
+    '<div class="flow-step"><div class="num">3</div><div><b>擬定矯正措施</b>：提出具體可行之改善方案。</div></div>'+
+    '<div class="flow-step"><div class="num">4</div><div><b>執行追蹤</b>：執行措施並追蹤效果，確認問題已消除。</div></div>'+
+    '<div class="flow-step"><div class="num">5</div><div><b>關閉結案</b>：效果確認後，填寫矯正措施單並歸檔。</div></div>'+
+    '</div>'+
+
+    '<div class="sub-title">二、預防措施</div>'+
+    '<p>預防措施係針對潛在不合格事項，在問題發生前主動採取措施。</p>'+
+    '<ul>'+
+    '<li>定期分析施工紀錄，找出潛在品質風險。</li>'+
+    '<li>施工前進行危害分析，擬定預防方案。</li>'+
+    '<li>針對類似工程之案例，吸取經驗教訓。</li>'+
+    '<li>定期辦理品質教育訓練，提升人員能力。</li>'+
+    '</ul>'+
+    '<div class="page-num">9</div>'+
+    '</div>';
+
+  if(isOn('q-ch10'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">拾、內部品質稽核</div>'+
+
+    '<div class="sub-title">一、稽核目的</div>'+
+    '<p>確認品質計畫書之執行情形，識別缺失並採取改善措施，持續提升品質管理水準。</p>'+
+
+    '<div class="sub-title">二、稽核計畫</div>'+
+    '<table class="content-table">'+
+    '<tr><th>稽核項目</th><th>稽核頻率</th><th>稽核人員</th></tr>'+
+    '<tr><td>品質計畫執行狀況</td><td>每季一次</td><td>品管工程師</td></tr>'+
+    '<tr><td>自主檢查表完整性</td><td>每月一次</td><td>品管工程師</td></tr>'+
+    '<tr><td>材料/設備送審紀錄</td><td>每季一次</td><td>品管工程師</td></tr>'+
+    '<tr><td>不合格品處理紀錄</td><td>每季一次</td><td>品管工程師</td></tr>'+
+    '<tr><td>文件紀錄管理</td><td>每季一次</td><td>品管工程師</td></tr>'+
+    '</table>'+
+
+    '<div class="sub-title">三、稽核程序</div>'+
+    '<div class="flow-box">'+
+    '<div class="flow-step"><div class="num">1</div><div><b>稽核準備</b>：制定稽核查檢表，通知受稽核部門。</div></div>'+
+    '<div class="flow-step"><div class="num">2</div><div><b>執行稽核</b>：依查檢表逐項稽核，記錄缺失事項。</div></div>'+
+    '<div class="flow-step"><div class="num">3</div><div><b>稽核報告</b>：填寫稽核報告，列明發現缺失及改善建議。</div></div>'+
+    '<div class="flow-step"><div class="num">4</div><div><b>追蹤改善</b>：要求受稽核單位提出矯正措施並追蹤完成。</div></div>'+
+    '</div>'+
+    '<div class="page-num">10</div>'+
+    '</div>';
+
+  if(isOn('q-ch11'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">拾壹、文件紀錄管理系統</div>'+
+
+    '<div class="sub-title">一、文件管理</div>'+
+    '<p>本工程品質文件依下列規定管理：</p>'+
+    '<table class="content-table">'+
+    '<tr><th>文件類別</th><th>編號方式</th><th>保存期限</th><th>保管單位</th></tr>'+
+    '<tr><td>品質計畫書</td><td>QP-YYYYMM-XXX</td><td>竣工後5年</td><td>品管人員</td></tr>'+
+    '<tr><td>施工計畫書</td><td>CP-YYYYMM-XXX</td><td>竣工後5年</td><td>品管人員</td></tr>'+
+    '<tr><td>材料送審紀錄</td><td>MA-YYYYMM-XXX</td><td>竣工後5年</td><td>品管人員</td></tr>'+
+    '<tr><td>自主檢查表</td><td>IC-YYYYMM-XXX</td><td>竣工後5年</td><td>品管人員</td></tr>'+
+    '<tr><td>試驗報告</td><td>TR-YYYYMM-XXX</td><td>竣工後5年</td><td>品管人員</td></tr>'+
+    '<tr><td>不合格品處理單</td><td>NC-YYYYMM-XXX</td><td>竣工後5年</td><td>品管人員</td></tr>'+
+    '</table>'+
+
+    '<div class="sub-title">二、文件管制作業</div>'+
+    '<ul>'+
+    '<li><b>文件發行：</b>品質計畫書正式發行前須經專任工程人員審核簽認。</li>'+
+    '<li><b>文件修訂：</b>文件修訂時需標示版次及修訂日期，舊版文件回收並加蓋「作廢」章。</li>'+
+    '<li><b>文件分發：</b>依分發清單發放至相關人員，確認接收並簽收。</li>'+
+    '</ul>'+
+
+    '<div class="sub-title">三、紀錄管理</div>'+
+    '<ul>'+
+    '<li>所有品質紀錄應於填寫後一週內彙整，妥善保存於指定位置。</li>'+
+    '<li>紀錄應清晰可辨，不得塗改；若需更正，應劃線更正並簽名。</li>'+
+    '<li>電子檔案應定期備份，防止資料遺失。</li>'+
+    '<li>工程完工後，所有品質紀錄完整移交主辦機關或依規定保存。</li>'+
+    '</ul>'+
+
+    '<div class="doc-footer">⚠ 本品質計畫書依公共工程施工品質管理作業要點編製，實際執行應配合工程契約規定及監造單位指示辦理。</div>'+
+    '<div class="page-num">11</div>'+
+    '</div>';
+
+  return out;
+}
+
+// ─── Stub pages for other plan types ─────────────────
+function pagesStub(planId){
+  return '<div class="page doc-section" style="text-align:center;padding-top:60mm;">'+
+    '<div style="font-size:16pt;color:#bbb;margin-bottom:16px;">📄</div>'+
+    '<div style="font-size:13pt;color:#999;">'+v('p-plantype')+'</div>'+
+    '<div style="font-size:11pt;color:#bbb;margin-top:10px;">此計畫類型內容持續建置中<br>（已可列印封面與審查核章表）</div>'+
+    '</div>';
+}
+
+// ─── Main render ──────────────────────────────────────
+function refreshPreview(){
+  var out='';
+  var chapterLabels=[];
+
+  if(isOn('cover'))out+=pageCover();
+
+  if(isOn('review'))out+=pageReview();
+
+  // Build chapter list for TOC
+  var mods=PLAN_MODULES[PLAN]||[];
+  mods.forEach(function(m){
+    if(m.id==='cover'||m.id==='review'||m.id==='toc')return;
+    if(isOn(m.id))chapterLabels.push(m.label);
+  });
+
+  if(isOn('toc'))out+=pageTOC(chapterLabels);
+
+  // Content pages
+  if(PLAN==='scaffold'){out+=pagesScaffold();}
+  else if(PLAN==='formwork-calc'){out+=pagesFormworkCalc();}
+  else if(PLAN==='quality'){out+=pagesQuality();}
+  else{out+=pagesStub(PLAN);}
+
+  document.getElementById('doc-container').innerHTML=out;
+}
+
+// ─── Formwork Calc pages (placeholder that auto-computes) ──
+function pagesFormworkCalc(){
+  var L=parseFloat(v('fc-L'))||15.6;
+  var W=parseFloat(v('fc-W'))||16.1;
+  var t=parseFloat(v('fc-t'))||0.30;
+  var H=parseFloat(v('fc-H'))||2.8;
+  var sv=parseFloat(v('fc-sv'))||0.8;
+  var sp=parseFloat(v('fc-sp'))||0.6;
+
+  // Loads
+  var wc=2.4; // tf/m³
+  var wL=0.1; // tf/m²  施工活載
+  var wu=1.6*(wc*t+wL); // LRFD factored
+  var wuL=wu*sv; // 縱向梁線載重
+
+  var out='';
+  if(isOn('fc-ch1'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">第一章、工程概要</div>'+
+    '<div class="sub-title">施工項目</div>'+
+    '<ul>'+
+    '<li>施工項目：'+v('p-name')+'  模板支撐</li>'+
+    '<li>支撐範圍：樓板尺寸 '+L+'m × '+W+'m，版厚 '+t+'m</li>'+
+    '<li>樓層高度：'+H+' m</li>'+
+    '</ul>'+
+    '<div class="sub-title">基本假設</div>'+
+    '<ul>'+
+    '<li>模板荷重為均佈載重。</li>'+
+    '<li>混凝土單位重：2.4 tf/m³</li>'+
+    '<li>施工活載（人員器具）：0.1 tf/m²</li>'+
+    '<li>設計方法：LRFD（載重放大係數 1.6）</li>'+
+    '</ul>'+
+    '<div class="page-num">1</div>'+
+    '</div>';
+
+  if(isOn('fc-ch3'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">第三章、模板支撐計算式</div>'+
+    '<div class="sub-title">載重計算</div>'+
+    '<p>版厚 t = '+t+' m，混凝土單位重 = 2.4 tf/m³</p>'+
+    '<p>活載重（施工人員器具） = 0.1 tf/m²</p>'+
+    '<p>LRFD 設計載重：</p>'+
+    '<p style="margin-left:4em;font-family:monospace;">w<sub>u</sub> = 1.6 × (2.4 × '+t+' + 0.1) = <b>'+wu.toFixed(4)+' tf/m²</b></p>'+
+    '<p>縱向梁（間距 '+sv+' m）每延米載重：</p>'+
+    '<p style="margin-left:4em;font-family:monospace;">(w<sub>u</sub>)<sub>L</sub> = '+wu.toFixed(4)+' × '+sv+' = <b>'+wuL.toFixed(4)+' tf/m</b></p>'+
+    '<div class="doc-footer">⚠ 本計算書為輔助計算工具產出，計算結果仍須由依法登記之結構技師簽證並負最終法律責任。</div>'+
+    '<div class="page-num">2</div>'+
+    '</div>';
+
+  return out;
+}
+
+// ─── Init ─────────────────────────────────────────────
+initModules();
+refreshPreview();
+// Set today's date defaults
+(function(){
+  var d=new Date();
+  var s=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  document.getElementById('p-submit-date').value=s;
+  document.getElementById('p-start').value=s;
+})();
+</script>
+</body>
+</html>
