@@ -94,6 +94,18 @@ table.content-table th{background:#f0f0f0;font-weight:700;text-align:center;}
 .flow-step{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px;}
 .flow-step .num{background:var(--navy);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:2px;}
 .page-num{position:absolute;bottom:10mm;right:15mm;font-size:9pt;color:#888;}
+/* 頁首 / 頁尾（每頁重複） */
+.doc-header{position:absolute;top:8mm;left:15mm;right:15mm;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;font-size:8.5pt;color:#999;border-bottom:1px solid #ddd;padding-bottom:4px;}
+.doc-header .dh-left{font-weight:600;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.doc-header .dh-right{color:#aaa;white-space:nowrap;}
+.doc-footer-bar{position:absolute;bottom:10mm;left:15mm;font-size:8pt;color:#aaa;}
+.page.has-header{padding-top:28mm;}
+/* 圖目錄 / 表目錄 */
+.list-page{page-break-before:always;}
+.list-page h2{font-size:14pt;font-weight:700;color:var(--navy);text-align:center;margin-bottom:16px;}
+.list-item{display:flex;justify-content:space-between;padding:3px 0;font-size:10.5pt;border-bottom:1px dotted #ccc;}
+.list-item .lb{color:#333;}
+.list-item .pg{color:#888;}
 /* Footer disclaimer */
 .doc-footer{margin-top:30px;padding-top:10px;border-top:1px solid #ddd;font-size:9pt;color:#777;text-align:center;}
 /* Print */
@@ -101,6 +113,7 @@ table.content-table th{background:#f0f0f0;font-weight:700;text-align:center;}
   body{display:block;}
   #topbar,#left,#preview-wrap{display:none!important;}
   .page{width:100%;box-shadow:none;margin:0;page-break-after:always;padding:15mm 13mm;}
+  .page.has-header{padding-top:24mm;}
   @page{size:A4;margin:0;}
 }
 </style>
@@ -1194,6 +1207,7 @@ function refreshPreview(){
   else{out+=pagesStub(PLAN);}
 
   document.getElementById('doc-container').innerHTML=out;
+  postProcessDocument();
 }
 
 // ─── Formwork Calc pages (placeholder that auto-computes) ──
@@ -1246,6 +1260,148 @@ function pagesFormworkCalc(){
     '</div>';
 
   return out;
+}
+
+// ─── 頁首頁尾 / 頁碼 / 圖目錄 & 表目錄 ─────────────────
+function toRoman(n){var r=['i','ii','iii','iv','v','vi','vii','viii','ix','x'];return r[n-1]||String(n);}
+
+function findCaption(el){
+  var p=el.previousElementSibling;
+  while(p){
+    if(p.classList&&(p.classList.contains('sub-title')||p.classList.contains('sub2-title')))return p.textContent.trim();
+    p=p.previousElementSibling;
+  }
+  return '（無標題）';
+}
+
+function buildListPage(title,entries,cls){
+  var div=document.createElement('div');
+  div.className='page list-page '+cls;
+  var h2=document.createElement('h2');h2.textContent=title;div.appendChild(h2);
+  entries.forEach(function(e){
+    var row=document.createElement('div');row.className='list-item';
+    var lb=document.createElement('span');lb.className='lb';lb.textContent=e.label;
+    var pg=document.createElement('span');pg.className='pg';
+    row.appendChild(lb);row.appendChild(pg);div.appendChild(row);
+    e.pgRefEl=pg;
+  });
+  var pn=document.createElement('div');pn.className='page-num';div.appendChild(pn);
+  return div;
+}
+
+function addHeader(p){
+  if(p.querySelector('.doc-header'))return;
+  var h=document.createElement('div');h.className='doc-header';
+  var left=document.createElement('span');left.className='dh-left';
+  left.textContent=(v('p-name')||'')+'　│　文件編號：'+(v('p-docno')||'—');
+  var right=document.createElement('span');right.className='dh-right';
+  right.textContent=v('p-plantype')||'';
+  h.appendChild(left);h.appendChild(right);
+  p.insertBefore(h,p.firstChild);
+}
+
+function addFooterBar(p){
+  if(p.querySelector('.doc-footer-bar'))return;
+  var f=document.createElement('div');f.className='doc-footer-bar';
+  f.textContent=(v('p-contractor')||'宏儒營造股份有限公司')+' · 機密文件，僅供內部審查使用';
+  p.appendChild(f);
+}
+
+function postProcessDocument(){
+  var container=document.getElementById('doc-container');
+  var reviewPage=container.querySelector('.page.review-page');
+  var tocPage=container.querySelector('.page.toc');
+  var chapterPages=Array.prototype.slice.call(container.querySelectorAll('.page.doc-section'));
+  if(chapterPages.length===0 && !reviewPage && !tocPage)return;
+
+  // 掃描各章節之表格與流程圖，供圖目錄／表目錄使用
+  var tocEntries=[],tblEntries=[],figEntries=[];
+  chapterPages.forEach(function(pageEl,ci){
+    var chNum=ci+1;
+    var titleEl=pageEl.querySelector('.ch-title');
+    var chTitle=titleEl?titleEl.textContent.trim():('第'+chNum+'章');
+    tocEntries.push({label:chTitle,pageEl:pageEl});
+
+    var tIdx=0;
+    pageEl.querySelectorAll('table.content-table, table.review-table, table.check-table').forEach(function(tb){
+      tIdx++;
+      tblEntries.push({label:'表 '+chNum+'-'+tIdx+'　'+findCaption(tb),pageEl:pageEl});
+    });
+    var fIdx=0;
+    pageEl.querySelectorAll('.flow-box').forEach(function(fb){
+      fIdx++;
+      figEntries.push({label:'圖 '+chNum+'-'+fIdx+'　'+findCaption(fb),pageEl:pageEl});
+    });
+  });
+
+  var figListPage=figEntries.length?buildListPage('圖　目　錄',figEntries,'fig-list'):null;
+  var tblListPage=tblEntries.length?buildListPage('表　目　錄',tblEntries,'tbl-list'):null;
+
+  var extraTocRows=[];
+  if(tocPage){
+    var firstItem=tocPage.querySelector('.toc-item');
+    if(figListPage){
+      var frow=document.createElement('div');frow.className='toc-item';
+      frow.innerHTML='<span class="ch">圖　目　錄</span><span class="pg"></span>';
+      tocPage.insertBefore(frow,firstItem);
+      extraTocRows.push({row:frow,pageEl:figListPage});
+    }
+    if(tblListPage){
+      var trow=document.createElement('div');trow.className='toc-item';
+      trow.innerHTML='<span class="ch">表　目　錄</span><span class="pg"></span>';
+      tocPage.insertBefore(trow,firstItem);
+      extraTocRows.push({row:trow,pageEl:tblListPage});
+    }
+  }
+
+  var anchor=tocPage||reviewPage;
+  if(anchor){
+    var insertAfter=anchor;
+    if(figListPage){insertAfter.parentNode.insertBefore(figListPage,insertAfter.nextSibling);insertAfter=figListPage;}
+    if(tblListPage){insertAfter.parentNode.insertBefore(tblListPage,insertAfter.nextSibling);insertAfter=tblListPage;}
+  }
+
+  // 加上頁首頁尾，並依序編頁碼（封面不編號；前頁以羅馬數字，章節內容以阿拉伯數字）
+  var allPages=Array.prototype.slice.call(container.querySelectorAll('.page'));
+  var frontCounter=0,arabicCounter=0;
+  allPages.forEach(function(p){
+    if(p.classList.contains('cover'))return;
+    addHeader(p);
+    p.classList.add('has-header');
+    addFooterBar(p);
+    var isFront=p.classList.contains('review-page')||p.classList.contains('toc')||p.classList.contains('tbl-list')||p.classList.contains('fig-list');
+    var pnEl=p.querySelector('.page-num');
+    if(!pnEl){pnEl=document.createElement('div');pnEl.className='page-num';p.appendChild(pnEl);}
+    if(isFront){
+      frontCounter++;
+      var rom=toRoman(frontCounter);
+      pnEl.textContent=rom;
+      p.dataset.pageRoman=rom;
+    }else{
+      arabicCounter++;
+      pnEl.textContent=String(arabicCounter);
+      p.dataset.pageArabic=arabicCounter;
+    }
+  });
+
+  // 回填目錄／圖表目錄的實際頁碼
+  if(tocPage){
+    var items=tocPage.querySelectorAll('.toc-item');
+    items.forEach(function(item,idx){
+      var chObj=tocEntries[idx];
+      if(chObj){
+        var pgSpan=item.querySelector('.pg');
+        if(pgSpan)pgSpan.textContent=chObj.pageEl.dataset.pageArabic||'';
+      }
+    });
+  }
+  tblEntries.concat(figEntries).forEach(function(e){
+    if(e.pgRefEl)e.pgRefEl.textContent=e.pageEl.dataset.pageArabic||'';
+  });
+  extraTocRows.forEach(function(er){
+    var pgSpan=er.row.querySelector('.pg');
+    if(pgSpan)pgSpan.textContent=er.pageEl.dataset.pageRoman||'';
+  });
 }
 
 // ─── Init ─────────────────────────────────────────────
