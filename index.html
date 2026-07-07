@@ -104,6 +104,7 @@ table.content-table th{background:#f0f0f0;font-weight:700;text-align:center;}
   @page{size:A4;margin:0;}
 }
 </style>
+<script src="email-gate.js"></script>
 </head>
 <body>
 <div id="topbar">
@@ -117,7 +118,7 @@ table.content-table th{background:#f0f0f0;font-weight:700;text-align:center;}
   <h1>工程計畫書產生器</h1>
   <span>儒鴻結構技師事務所</span>
   <div class="spacer"></div>
-  <button class="top-btn secondary" onclick="window.print()">🖨 列印 / PDF</button>
+  <button class="top-btn secondary" onclick="JRH.checkEmail(function(){window.print();})">🖨 列印 / PDF</button>
   <button class="top-btn primary" onclick="refreshPreview()">🔄 更新預覽</button>
 </div>
 
