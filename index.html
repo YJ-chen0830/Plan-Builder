@@ -96,6 +96,18 @@ table.content-table th{background:#f0f0f0;font-weight:700;text-align:center;}
 .page-num{position:absolute;bottom:10mm;right:15mm;font-size:9pt;color:#888;}
 /* Footer disclaimer */
 .doc-footer{margin-top:30px;padding-top:10px;border-top:1px solid #ddd;font-size:9pt;color:#777;text-align:center;}
+/* Responsive: stack editor above preview on narrow screens */
+@media(max-width:860px){
+  body{height:auto;min-height:100vh;overflow:visible;}
+  #topbar{flex-wrap:wrap;padding:10px 14px;}
+  #topbar h1{font-size:15px;}
+  #topbar span{display:none;}
+  #topbar .top-btn{padding:8px 10px;font-size:12.5px;}
+  #layout{flex-direction:column;overflow:visible;}
+  #left{width:100%;max-height:70vh;border-right:none;border-bottom:1px solid var(--line);}
+  #preview-wrap{padding:14px;overflow-y:visible;}
+  .page{width:100%!important;min-height:0!important;}
+}
 /* Print */
 @media print{
   body{display:block;}
