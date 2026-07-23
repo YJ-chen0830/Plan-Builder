@@ -1231,7 +1231,7 @@ function pagesFormworkCalc(){
   // Loads
   var wc=2.4; // tf/m³
   var wL=0.1; // tf/m²  施工活載
-  var wu=1.6*(wc*t+wL); // LRFD factored
+  var wu=1.2*(wc*t)+1.6*wL; // LRFD factored: 1.2D+1.6L
   var wuL=wu*sv; // 縱向梁線載重
 
   var out='';
@@ -1249,7 +1249,7 @@ function pagesFormworkCalc(){
     '<li>模板荷重為均佈載重。</li>'+
     '<li>混凝土單位重：2.4 tf/m³</li>'+
     '<li>施工活載（人員器具）：0.1 tf/m²</li>'+
-    '<li>設計方法：LRFD（載重放大係數 1.6）</li>'+
+    '<li>設計方法：LRFD（w<sub>u</sub>=1.2D+1.6L，靜載重放大係數1.2、活載重放大係數1.6）</li>'+
     '</ul>'+
     '<div class="page-num">1</div>'+
     '</div>';
@@ -1261,7 +1261,7 @@ function pagesFormworkCalc(){
     '<p>版厚 t = '+t+' m，混凝土單位重 = 2.4 tf/m³</p>'+
     '<p>活載重（施工人員器具） = 0.1 tf/m²</p>'+
     '<p>LRFD 設計載重：</p>'+
-    '<p style="margin-left:4em;font-family:monospace;">w<sub>u</sub> = 1.6 × (2.4 × '+t+' + 0.1) = <b>'+wu.toFixed(4)+' tf/m²</b></p>'+
+    '<p style="margin-left:4em;font-family:monospace;">w<sub>u</sub> = 1.2 × (2.4 × '+t+') + 1.6 × 0.1 = <b>'+wu.toFixed(4)+' tf/m²</b></p>'+
     '<p>縱向梁（間距 '+sv+' m）每延米載重：</p>'+
     '<p style="margin-left:4em;font-family:monospace;">(w<sub>u</sub>)<sub>L</sub> = '+wu.toFixed(4)+' × '+sv+' = <b>'+wuL.toFixed(4)+' tf/m</b></p>'+
     '<div class="doc-footer">⚠ 本計算書為輔助計算工具產出，計算結果仍須由依法登記之結構技師簽證並負最終法律責任。</div>'+
