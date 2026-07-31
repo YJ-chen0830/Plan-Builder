@@ -217,6 +217,12 @@ table.content-table th{background:#f0f0f0;font-weight:700;text-align:center;}
         <button class="plan-type-btn" data-plan="quality" onclick="setPlan(this)">
           品質計畫書<br><span class="sub">11章制式架構 · PDCA · 自主檢查表</span>
         </button>
+        <button class="plan-type-btn" data-plan="overall-construction" onclick="setPlan(this)">
+          整體施工計畫書<br><span class="sub">測量 · 開挖等可複選工項</span>
+        </button>
+        <button class="plan-type-btn" data-plan="osh" onclick="setPlan(this)">
+          職業安全衛生計畫書<br><span class="sub">架構建置中</span>
+        </button>
 
         <div class="section-title" id="plan-params-title" style="display:none">計畫專屬參數</div>
         <div id="plan-params"></div>
@@ -339,6 +345,26 @@ var PLAN_MODULES = {
     {id:'q-ch10', label:'拾、內部品質稽核',              default:true},
     {id:'q-ch11', label:'拾壹、文件紀錄管理系統',        default:true},
   ],
+  // 跟其餘9種「一次只能選一種、章節固定」的計畫書不同——這個類型底下是
+  // 可複選的工項清單。測量/開挖是預設會有的工項（default:true）；之後要加
+  // 「需要另外勾選才會出現」的項目（如DIP管工程、烤漆欄杆工程），比照這個
+  // 陣列的寫法加一筆default:false即可，UI跟isOn()判斷邏輯完全不用再改。
+  'overall-construction': [
+    {id:'cover',        label:'封面',      default:true},
+    {id:'review',       label:'審查核章表', default:true},
+    {id:'toc',          label:'目錄',      default:true},
+    {id:'oc-survey',    label:'測量工程',   default:true},
+    {id:'oc-excavation',label:'開挖工程',   default:true},
+  ],
+  // 職業安全衛生計畫書：跟業主提到的「三大計畫書」（整體施工／整體品質／
+  // 職安衛生）對齊，這次只搭骨架，內容留白——refreshPreview()沒有對應這個
+  // plan id的if分支，會自動落到既有的pagesStub()fallback，跟其餘還沒開發
+  // 內容的計畫類型（formwork/concrete/earthwork/runoff/planting）行為一致。
+  osh: [
+    {id:'cover', label:'封面',      default:true},
+    {id:'review',label:'審查核章表', default:true},
+    {id:'toc',   label:'目錄',      default:true},
+  ],
 };
 
 var PLAN_PARAMS_HTML = {
@@ -371,6 +397,21 @@ var PLAN_PARAMS_HTML = {
       <div><label>縱向梁間距 (m)</label><input type="number" id="fc-sv" value="0.8" step="0.1" oninput="refreshPreview()"></div>
       <div><label>鋼支柱間距 (m)</label><input type="number" id="fc-sp" value="0.6" step="0.1" oninput="refreshPreview()"></div>
     </div>
+  `,
+  'overall-construction': `
+    <div class="section-title" style="margin-top:0;">測量參數</div>
+    <label>測量基準座標系統</label><input type="text" id="oc-datum" value="TWD97 二度分帶" oninput="refreshPreview()">
+    <div class="section-title">開挖參數</div>
+    <div class="row2">
+      <div><label>開挖總深度 (m)</label><input type="number" id="oc-depth" value="3.0" step="0.1" oninput="refreshPreview()"></div>
+      <div><label>開挖範圍面積 (m²)</label><input type="number" id="oc-area" value="500" step="10" oninput="refreshPreview()"></div>
+    </div>
+    <label>擋土方式</label>
+    <select id="oc-support" oninput="refreshPreview()">
+      <option value="none">無支撐開挖（放坡）</option>
+      <option value="sheet-pile">鋼板樁</option>
+      <option value="diaphragm-wall">連續壁</option>
+    </select>
   `,
 };
 
@@ -407,7 +448,8 @@ function setPlan(btn){
   var pt=document.getElementById('p-plantype');
   var names={scaffold:'施工架施工計畫書',formwork:'模板工程施工計畫書','formwork-calc':'模板支撐計算書',
     concrete:'混凝土澆置計畫書',excavation:'開挖擋土支撐計畫書',earthwork:'土方暫置計畫書',
-    runoff:'逕流廢水計畫書',planting:'分項植栽計畫書',quality:'品質計畫書'};
+    runoff:'逕流廢水計畫書',planting:'分項植栽計畫書',quality:'品質計畫書',
+    'overall-construction':'整體施工計畫書',osh:'職業安全衛生計畫書'};
   if(pt&&names[PLAN])pt.value=names[PLAN];
   // Update params
   var pp=document.getElementById('plan-params');
@@ -1214,6 +1256,7 @@ function refreshPreview(){
   if(PLAN==='scaffold'){out+=pagesScaffold();}
   else if(PLAN==='formwork-calc'){out+=pagesFormworkCalc();}
   else if(PLAN==='quality'){out+=pagesQuality();}
+  else if(PLAN==='overall-construction'){out+=pagesOverallConstruction();}
   else{out+=pagesStub(PLAN);}
 
   document.getElementById('doc-container').innerHTML=out;
@@ -1266,6 +1309,70 @@ function pagesFormworkCalc(){
     '<p style="margin-left:4em;font-family:monospace;">(w<sub>u</sub>)<sub>L</sub> = '+wu.toFixed(4)+' × '+sv+' = <b>'+wuL.toFixed(4)+' tf/m</b></p>'+
     '<div class="doc-footer">⚠ 本計算書為輔助計算工具產出，計算結果仍須由依法登記之結構技師簽證並負最終法律責任。</div>'+
     '<div class="page-num">2</div>'+
+    '</div>';
+
+  return out;
+}
+
+// ─── Overall Construction pages (composable work-item modules) ──
+// 這是唯一一個「底下工項可複選」的計畫類型，跟其餘固定章節的計畫書不同。
+// 這裡的兩個章節都是我（AI）依標準工程實務起草的草稿內容，不是業主本人
+// 撰寫，務必保留段落末尾的審核提醒，不能讓人誤以為是可直接送審的定稿。
+function pagesOverallConstruction(){
+  var out='';
+  var datum=v('oc-datum')||'TWD97 二度分帶';
+  var depth=v('oc-depth')||'3.0';
+  var area=v('oc-area')||'500';
+  var supportLabels={none:'無支撐開挖（放坡）','sheet-pile':'鋼板樁','diaphragm-wall':'連續壁'};
+  var support=supportLabels[v('oc-support')]||'無支撐開挖（放坡）';
+  var reviewNote='<div class="doc-footer">⚠ 本章節為輔助草稿內容，實際工法、數值與規範引用仍須由專業技師依現場條件審核後定稿。</div>';
+
+  if(isOn('oc-survey'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">測量工程</div>'+
+
+    '<div class="sub-title">一、測量範圍及依據</div>'+
+    '<p>本工程測量作業範圍涵蓋「'+v('p-name')+'」全區施工界線及相關公共設施，測量基準座標系統採用'+datum+'，並以既有圖根點或都市計畫樁位作為控制點引測依據，確保測量成果與圖說座標系統一致。</p>'+
+
+    '<div class="sub-title">二、測量方法</div>'+
+    '<p>1. 控制點測設：依基準點引測建立本工程專用控制點，並定期複測校核，避免施工過程中控制點位移影響後續放樣精度。</p>'+
+    '<p>2. 高程引測：以鄰近水準點引測本工程高程基準，作為各項工程放樣、開挖深度、構造物標高控制之依據。</p>'+
+    '<p>3. 放樣作業：依核定設計圖說辦理建築線、構造物邊界、管線位置等放樣，放樣成果經自主檢核後始得進行後續施工。</p>'+
+
+    '<div class="sub-title">三、精度要求</div>'+
+    '<p>平面位置測量誤差、高程測量誤差應符合主管機關相關測量規範及契約規定之允許誤差範圍，測量成果如有疑義應即刻複測確認，不得逕行施工。</p>'+
+
+    '<div class="sub-title">四、測量儀器</div>'+
+    '<p>依作業性質採用全站儀、GPS/RTK衛星定位系統、水準儀等合格檢驗之測量儀器，儀器應於有效檢校期限內使用。</p>'+
+
+    '<div class="sub-title">五、測量成果與紀錄</div>'+
+    '<p>各階段測量成果應建立紀錄表單留存備查，並於竣工前完成竣工測量，作為竣工圖說編製之依據。</p>'+
+
+    reviewNote+
+    '<div class="page-num"></div>'+
+    '</div>';
+
+  if(isOn('oc-excavation'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">開挖工程</div>'+
+
+    '<div class="sub-title">一、開挖範圍及深度</div>'+
+    '<p>本工程開挖範圍面積約 '+area+' m²，開挖總深度約 '+depth+' m，擋土方式採「'+support+'」，實際數值應依地質鑽探報告及結構設計圖說核實調整。</p>'+
+
+    '<div class="sub-title">二、開挖方法及順序</div>'+
+    '<p>依核定圖說由外而內、由淺而深分層開挖，開挖順序應避免造成鄰近構造物或既有管線之不均勻沉陷，必要時分區分段施作並隨時監測周邊狀況。</p>'+
+
+    '<div class="sub-title">三、邊坡穩定 / 擋土措施概述</div>'+
+    '<p>依前項採用之擋土方式辦理，施工前應確認擋土設施之設計強度足以承受開挖深度範圍內之土壓力及地下水壓力。若本工程開挖深度、範圍或地質條件複雜，達主管機關規定之專業技師簽證門檻，應另行委託辦理本站既有之「開挖擋土支撐計畫書」，由結構技師完成擋土結構設計計算，不得逕以本章節概述內容取代正式設計。</p>'+
+
+    '<div class="sub-title">四、排水措施</div>'+
+    '<p>開挖區周邊應設置排水溝、集水井等設施，防止地表水滲入開挖面影響邊坡穩定；地下水位較高之區域應評估是否需辦理降水作業。</p>'+
+
+    '<div class="sub-title">五、安全注意事項</div>'+
+    '<p>開挖作業區周邊應設置警戒標示及防護設施，機具進出動線應與人員通行動線區隔，並依職業安全衛生相關法規辦理開挖作業風險評估及教育訓練。</p>'+
+
+    reviewNote+
+    '<div class="page-num"></div>'+
     '</div>';
 
   return out;
