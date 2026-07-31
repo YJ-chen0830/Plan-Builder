@@ -218,7 +218,7 @@ table.content-table th{background:#f0f0f0;font-weight:700;text-align:center;}
           品質計畫書<br><span class="sub">11章制式架構 · PDCA · 自主檢查表</span>
         </button>
         <button class="plan-type-btn" data-plan="overall-construction" onclick="setPlan(this)">
-          整體施工計畫書<br><span class="sub">測量 · 開挖等可複選工項</span>
+          整體施工計畫書<br><span class="sub">測量 · 開挖 · 鋼筋 · 模板 · 混凝土等可複選工項</span>
         </button>
         <button class="plan-type-btn" data-plan="osh" onclick="setPlan(this)">
           職業安全衛生計畫書<br><span class="sub">架構建置中</span>
@@ -355,6 +355,9 @@ var PLAN_MODULES = {
     {id:'toc',          label:'目錄',      default:true},
     {id:'oc-survey',    label:'測量工程',   default:true},
     {id:'oc-excavation',label:'開挖工程',   default:true},
+    {id:'oc-rebar',     label:'鋼筋工程',   default:true},
+    {id:'oc-formwork',  label:'模板工程',   default:true},
+    {id:'oc-concrete',  label:'混凝土工程', default:true},
   ],
   // 職業安全衛生計畫書：跟業主提到的「三大計畫書」（整體施工／整體品質／
   // 職安衛生）對齊，這次只搭骨架，內容留白——refreshPreview()沒有對應這個
@@ -1316,8 +1319,30 @@ function pagesFormworkCalc(){
 
 // ─── Overall Construction pages (composable work-item modules) ──
 // 這是唯一一個「底下工項可複選」的計畫類型，跟其餘固定章節的計畫書不同。
-// 這裡的兩個章節都是我（AI）依標準工程實務起草的草稿內容，不是業主本人
+// 每個工項章節內容都是我（AI）依標準工程實務起草的草稿內容，不是業主本人
 // 撰寫，務必保留段落末尾的審核提醒，不能讓人誤以為是可直接送審的定稿。
+
+// 施工流程圖：沿用pagesScaffold()/pagesQuality()既有的圓形編號步驟樣式
+// （.flow-box/.flow-step/.num），不是另外發明新視覺語言，跟全文件風格一致。
+function flowBox(steps){
+  return '<div class="flow-box">'+steps.map(function(s,i){
+    return '<div class="flow-step"><div class="num">'+(i+1)+'</div><div><b>'+s[0]+'</b>：'+s[1]+'</div></div>';
+  }).join('')+'</div>';
+}
+
+// 自主檢查表：沿用pagesQuality() q-ch7既有的項次/檢查項目/合格/不合格/備註
+// 表格樣式，末尾補簽認欄位，同樣是既有樣式的延伸而非新發明。
+function checkTable(items){
+  var rows=items.map(function(it,i){
+    return '<tr><td>'+(i+1)+'</td><td>'+it+'</td><td style="text-align:center">□</td><td style="text-align:center">□</td><td></td></tr>';
+  }).join('');
+  return '<table class="content-table" style="font-size:9.5pt;">'+
+    '<tr><th style="width:5%">項次</th><th>檢查項目</th><th style="width:12%">合格</th><th style="width:12%">不合格</th><th style="width:20%">備註</th></tr>'+
+    rows+
+    '</table>'+
+    '<div style="margin-top:10px;font-size:9.5pt;color:#555;">自主檢查人員：________________　日期：________________　監造確認：________________</div>';
+}
+
 function pagesOverallConstruction(){
   var out='';
   var datum=v('oc-datum')||'TWD97 二度分帶';
@@ -1344,10 +1369,28 @@ function pagesOverallConstruction(){
 
     '<div class="sub-title">四、測量儀器</div>'+
     '<p>依作業性質採用全站儀、GPS/RTK衛星定位系統、水準儀等合格檢驗之測量儀器，儀器應於有效檢校期限內使用。</p>'+
+    reviewNote+
+    '<div class="page-num"></div>'+
+    '</div>'+
 
-    '<div class="sub-title">五、測量成果與紀錄</div>'+
-    '<p>各階段測量成果應建立紀錄表單留存備查，並於竣工前完成竣工測量，作為竣工圖說編製之依據。</p>'+
-
+    '<div class="page doc-section">'+
+    '<div class="ch-title">測量工程 · 施工流程</div>'+
+    flowBox([
+      ['資料蒐集與圖根點勘查','蒐集既有圖根點、都市計畫樁位及相關測量成果，現場勘查確認可用控制點位置與現況。'],
+      ['控制點測設','依基準點引測建立本工程專用控制點，並釘設穩固樁位。'],
+      ['高程引測','以鄰近水準點引測本工程高程基準。'],
+      ['現場放樣','依核定圖說辦理建築線、構造物邊界、管線位置等放樣。'],
+      ['放樣自主複核','雙人複核放樣成果，確認無誤後始得移交施工。'],
+      ['施工放樣移交','會同監造/施工單位現場確認樁位，填寫移交紀錄。']
+    ])+
+    '<div class="sub-title" style="margin-top:16px;">測量工程自主檢查表</div>'+
+    checkTable([
+      '控制點座標核對基準點引測紀錄',
+      '高程引測核對鄰近水準點',
+      '放樣點位完成雙人複核',
+      '測量儀器檢校證明於有效期限內',
+      '測量紀錄表單完整簽認並留存'
+    ])+
     reviewNote+
     '<div class="page-num"></div>'+
     '</div>';
@@ -1370,7 +1413,155 @@ function pagesOverallConstruction(){
 
     '<div class="sub-title">五、安全注意事項</div>'+
     '<p>開挖作業區周邊應設置警戒標示及防護設施，機具進出動線應與人員通行動線區隔，並依職業安全衛生相關法規辦理開挖作業風險評估及教育訓練。</p>'+
+    reviewNote+
+    '<div class="page-num"></div>'+
+    '</div>'+
 
+    '<div class="page doc-section">'+
+    '<div class="ch-title">開挖工程 · 施工流程</div>'+
+    flowBox([
+      ['地質資料確認','核對地質鑽探報告與設計圖說，確認開挖深度、範圍及地下水位條件。'],
+      ['擋土設施施作','依核定擋土方式施作（連續壁/鋼板樁等），無支撐開挖者依放坡角度施作。'],
+      ['分層開挖','由外而內、由淺而深分層開挖，避免造成鄰近構造物不均勻沉陷。'],
+      ['邊坡／擋土監測','依監測計畫定期量測邊坡位移、擋土設施應力等項目。'],
+      ['排水設施設置','設置排水溝、集水井等設施，防止地表水滲入影響邊坡穩定。'],
+      ['開挖面查驗','會同監造查驗開挖面狀況，確認無異常後進行下一階段施工。']
+    ])+
+    '<div class="sub-title" style="margin-top:16px;">開挖工程自主檢查表</div>'+
+    checkTable([
+      '開挖深度、範圍核對設計圖說',
+      '擋土設施施工品質檢查',
+      '邊坡穩定性目視檢查',
+      '排水設施暢通檢查',
+      '監測儀器讀數紀錄（如有設置）',
+      '鄰近構造物／既有管線沉陷監測'
+    ])+
+    reviewNote+
+    '<div class="page-num"></div>'+
+    '</div>';
+
+  if(isOn('oc-rebar'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">鋼筋工程</div>'+
+
+    '<div class="sub-title">一、材料與規格</div>'+
+    '<p>鋼筋材質應符合設計圖說及規範要求，進場時應檢附出廠證明及材質證明文件，並依批號抽驗，不符合規定者不得使用。</p>'+
+
+    '<div class="sub-title">二、加工與組立</div>'+
+    '<p>鋼筋裁剪、彎折應依設計圖說之尺寸及彎鉤角度施作，綁紮間距、搭接長度及搭接位置應符合規範規定，不得任意變更配置。</p>'+
+
+    '<div class="sub-title">三、保護層與間距</div>'+
+    '<p>依設計圖說設置適當之保護層墊塊，確保鋼筋保護層厚度符合規定，鋼筋間距應維持一致並便於混凝土澆置時之流動與搗實。</p>'+
+
+    '<div class="sub-title">四、隱蔽前查驗</div>'+
+    '<p>鋼筋組立完成後，混凝土澆置前應會同監造單位辦理隱蔽前查驗，查驗合格並取得核可紀錄後，方可進行下一階段施工。</p>'+
+    reviewNote+
+    '<div class="page-num"></div>'+
+    '</div>'+
+
+    '<div class="page doc-section">'+
+    '<div class="ch-title">鋼筋工程 · 施工流程</div>'+
+    flowBox([
+      ['材料進場檢驗','核對出廠證明、材質證明文件，並依批號抽驗規格、數量。'],
+      ['裁剪彎折加工','依圖說尺寸及彎鉤角度裁剪彎折，加工成品逐項核對。'],
+      ['綁紮組立','依配置圖綁紮組立，確認間距、搭接位置與長度正確。'],
+      ['保護層與間距檢查','設置墊塊確保保護層厚度，檢查鋼筋間距是否一致。'],
+      ['隱蔽前查驗','會同監造辦理隱蔽前查驗，取得核可紀錄。'],
+      ['澆置前最終確認','確認鋼筋配置與清潔狀況，無誤後方可澆置混凝土。']
+    ])+
+    '<div class="sub-title" style="margin-top:16px;">鋼筋工程自主檢查表</div>'+
+    checkTable([
+      '鋼筋出廠證明／材質證明文件核對',
+      '鋼筋規格、號數核對設計圖說',
+      '加工尺寸、彎鉤角度符合規範',
+      '綁紮間距、搭接長度符合圖說',
+      '保護層厚度確認（墊塊設置）',
+      '隱蔽前查驗紀錄完成（會同監造）'
+    ])+
+    reviewNote+
+    '<div class="page-num"></div>'+
+    '</div>';
+
+  if(isOn('oc-formwork'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">模板工程</div>'+
+
+    '<div class="sub-title">一、材料與支撐系統</div>'+
+    '<p>模板材料應具足夠強度及剛度，表面平整無破損變形；支撐系統應依計算書規格施作，確保足以承受澆置期間之新拌混凝土側壓力及施工活載重。</p>'+
+
+    '<div class="sub-title">二、模板組立</div>'+
+    '<p>模板組立應依設計圖說放樣定位，尺寸、垂直度及水平度應符合允許誤差範圍，接縫應緊密處理避免澆置時漏漿。</p>'+
+
+    '<div class="sub-title">三、支撐與模板穩固度</div>'+
+    '<p>支撐系統應確實鎖固，澆置前應會同檢查支撐是否穩固、有無鬆脫或異常變形現象。</p>'+
+
+    '<div class="sub-title">四、拆模時機</div>'+
+    '<p>拆模應待混凝土達到規範或設計要求之強度（依試體強度試驗結果或齡期判定）後方可施作，不得提前拆模影響構造物安全。</p>'+
+    reviewNote+
+    '<div class="page-num"></div>'+
+    '</div>'+
+
+    '<div class="page doc-section">'+
+    '<div class="ch-title">模板工程 · 施工流程</div>'+
+    flowBox([
+      ['模板材料檢驗','檢查模板材料強度、剛度及表面狀況，不合格材料不得使用。'],
+      ['支撐系統組立','依計算書規格組立支撐系統，確認間距與鎖固方式正確。'],
+      ['模板組立與放樣','依圖說放樣定位，組立模板並確認尺寸、垂直度、水平度。'],
+      ['穩固度檢查','檢查支撐與模板鎖固狀況，確認無鬆脫、變形。'],
+      ['澆置前最終檢查','會同查驗模板清潔、接縫緊密度及預埋件位置。'],
+      ['拆模時機判定','依試體強度或齡期判定拆模時機，記錄拆模日期。']
+    ])+
+    '<div class="sub-title" style="margin-top:16px;">模板工程自主檢查表</div>'+
+    checkTable([
+      '模板材料品質檢查（無破損變形）',
+      '支撐系統規格核對計算書',
+      '模板尺寸、垂直度、水平度檢查',
+      '接縫緊密度檢查（防止漏漿）',
+      '支撐穩固性檢查（鎖固完整）',
+      '拆模強度確認（試體強度或齡期）'
+    ])+
+    reviewNote+
+    '<div class="page-num"></div>'+
+    '</div>';
+
+  if(isOn('oc-concrete'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">混凝土工程</div>'+
+
+    '<div class="sub-title">一、配比與材料</div>'+
+    '<p>混凝土配比應依設計強度需求辦理配比設計，並取得試拌報告確認符合要求；進場時應核對送料單、辦理坍度試驗及製作試體。</p>'+
+
+    '<div class="sub-title">二、澆置作業</div>'+
+    '<p>澆置前應完成模板、鋼筋及預埋件之查驗，澆置過程應保持連續性，避免冷縫產生，並依規定分層澆置及搗實。</p>'+
+
+    '<div class="sub-title">三、搗實與表面修飾</div>'+
+    '<p>使用震動棒等搗實設備均勻搗實，避免過度震動造成材料析離；表面應依需求進行修飾整平。</p>'+
+
+    '<div class="sub-title">四、養護</div>'+
+    '<p>混凝土澆置完成後應依規範規定期間辦理養護（灑水、覆蓋等方式），避免過早乾燥影響強度發展。</p>'+
+    reviewNote+
+    '<div class="page-num"></div>'+
+    '</div>'+
+
+    '<div class="page doc-section">'+
+    '<div class="ch-title">混凝土工程 · 施工流程</div>'+
+    flowBox([
+      ['配比設計確認','核對配比設計書及試拌報告，確認符合設計強度要求。'],
+      ['澆置前查驗','會同查驗模板、鋼筋、預埋件是否就位完成。'],
+      ['澆置作業','依分層澆置計畫施作，保持澆置連續性避免冷縫。'],
+      ['搗實','使用震動棒均勻搗實，避免析離或蜂窩現象。'],
+      ['表面修飾','依需求整平、修飾混凝土表面。'],
+      ['養護','依規範規定期間辦理養護，確保強度正常發展。']
+    ])+
+    '<div class="sub-title" style="margin-top:16px;">混凝土工程自主檢查表</div>'+
+    checkTable([
+      '配比設計書／試拌報告核對',
+      '坍度試驗結果符合規定（每車或依規定頻率）',
+      '試體製作與送驗完成',
+      '澆置過程連續性檢查（無冷縫）',
+      '搗實均勻度檢查（無蜂窩、析離）',
+      '養護方式與期間確認'
+    ])+
     reviewNote+
     '<div class="page-num"></div>'+
     '</div>';
