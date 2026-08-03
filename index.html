@@ -416,6 +416,20 @@ var PLAN_PARAMS_HTML = {
       <option value="diaphragm-wall">連續壁</option>
     </select>
   `,
+  excavation: `
+    <div class="section-title" style="margin-top:0;">開挖參數</div>
+    <div class="row2">
+      <div><label>開挖總深度 (m)</label><input type="number" id="ex-depth" value="3.0" step="0.1" oninput="refreshPreview()"></div>
+      <div><label>開挖範圍面積 (m²)</label><input type="number" id="ex-area" value="500" step="10" oninput="refreshPreview()"></div>
+    </div>
+    <label>地下水位深度 (m)</label><input type="number" id="ex-gwl" value="1.5" step="0.1" oninput="refreshPreview()">
+    <label>擋土方式</label>
+    <select id="ex-support" oninput="refreshPreview()">
+      <option value="none">無支撐開挖（放坡）</option>
+      <option value="sheet-pile">鋼板樁</option>
+      <option value="diaphragm-wall">連續壁</option>
+    </select>
+  `,
 };
 
 // ─── Helpers ──────────────────────────────────────────
@@ -1260,6 +1274,7 @@ function refreshPreview(){
   else if(PLAN==='formwork-calc'){out+=pagesFormworkCalc();}
   else if(PLAN==='quality'){out+=pagesQuality();}
   else if(PLAN==='overall-construction'){out+=pagesOverallConstruction();}
+  else if(PLAN==='excavation'){out+=pagesExcavation();}
   else{out+=pagesStub(PLAN);}
 
   document.getElementById('doc-container').innerHTML=out;
@@ -1564,6 +1579,135 @@ function pagesOverallConstruction(){
     ])+
     reviewNote+
     '<div class="page-num"></div>'+
+    '</div>';
+
+  return out;
+}
+
+// ─── Excavation / Shoring plan (開挖擋土支撐計畫書，獨立完整版) ──
+// 跟 pagesOverallConstruction() 裡的「開挖工程」摘要工項不同：那裡的內容
+// 明文承諾「達簽證門檻應另行委託辦理本站既有之開挖擋土支撐計畫書」，這裡
+// 就是那份被承諾的完整版，深度介於摘要工項與 pagesScaffold() 之間，
+// 仍是輔助草稿，不取代技師簽證。
+function pagesExcavation(){
+  var out='';
+  var depth=v('ex-depth')||'3.0';
+  var area=v('ex-area')||'500';
+  var gwl=v('ex-gwl')||'1.5';
+  var supportLabels={none:'無支撐開挖（放坡）','sheet-pile':'鋼板樁','diaphragm-wall':'連續壁'};
+  var support=supportLabels[v('ex-support')]||'無支撐開挖（放坡）';
+  var reviewNote='<div class="doc-footer">⚠ 本章節為輔助草稿內容，實際工法、數值與規範引用仍須由專業技師依現場條件審核後定稿。</div>';
+
+  if(isOn('ex-ch1'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">第一章、工程概述</div>'+
+
+    '<div class="sub-title">1.1 工程概要</div>'+
+    '<p>1. 工程名稱：'+v('p-name')+'。</p>'+
+    '<p>2. 工程位置：'+v('p-loc')+'。</p>'+
+    '<p>3. 主辦機關：'+v('p-owner')+'。</p>'+
+    '<p>4. 設計廠商：'+v('p-designer')+'。</p>'+
+    '<p>5. 監造廠商：'+v('p-supervisor')+'。</p>'+
+    '<p>6. 施工廠商及專任工程人員：'+v('p-contractor')+'、'+v('p-engineer')+'。</p>'+
+    '<p>7. 契約金額：新台幣 '+v('p-amount')+' 元整。</p>'+
+    '<p>8. 開挖範圍面積：約 '+area+' m²。</p>'+
+    '<p>9. 開挖總深度：約 '+depth+' m。</p>'+
+
+    '<div class="sub-title">1.2 開挖目的</div>'+
+    '<p>本工程因基礎結構施作需要，須辦理基地開挖作業，開挖深度、範圍及擋土方式應依地質鑽探報告及結構設計圖說核實調整，本計畫書內容為施工前輔助規劃草案。</p>'+
+
+    '<div class="sub-title">1.3 與鄰近構造物之關係</div>'+
+    '<p>開挖前應調查基地周邊既有建築物、地下管線、道路及其他公共設施之現況與相對位置，評估開挖作業對其可能造成之影響，必要時辦理鄰房現況鑑定並納入監測計畫範圍。</p>'+
+    reviewNote+
+    '<div class="page-num">1</div>'+
+    '</div>';
+
+  if(isOn('ex-ch2'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">第二章、地盤條件</div>'+
+
+    '<div class="sub-title">2.1 地層概述</div>'+
+    '<p>本工程地層概況應依地質鑽探報告記載之土層分布、土層力學參數（如單位重、內摩擦角、凝聚力等）辦理，作為擋土設計及開挖工法選定之依據。地質鑽探報告應由具資格之技師或機構出具，本計畫書不代替地質鑽探作業。</p>'+
+
+    '<div class="sub-title">2.2 地下水位</div>'+
+    '<p>本基地地下水位初估約在地表下 '+gwl+' m，實際水位應以現場觀測井長期監測資料為準，並隨季節、降雨及周邊抽排水情形變動，開挖及擋土設計應考量地下水壓力對邊坡穩定及擋土結構之影響。</p>'+
+
+    '<div class="sub-title">2.3 鄰房現況調查</div>'+
+    '<p>開挖影響範圍內之既有建築物，施工前應辦理鄰房現況調查（含結構現況照相、既有裂縫紀錄等），作為施工後鄰房沉陷、傾斜或裂縫等異常變化之比對基準，調查結果應留存書面及影像紀錄備查。</p>'+
+    reviewNote+
+    '<div class="page-num">2</div>'+
+    '</div>';
+
+  if(isOn('ex-ch3'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">第三章、開挖計畫</div>'+
+
+    '<div class="sub-title">3.1 開挖範圍及分區</div>'+
+    '<p>本工程開挖範圍面積約 '+area+' m²，開挖總深度約 '+depth+' m，依基地形狀及擋土支撐配置，劃分開挖分區並訂定各分區開挖順序，避免單一區域開挖面過大造成邊坡失穩風險。</p>'+
+
+    '<div class="sub-title">3.2 開挖施工流程</div>'+
+    flowBox([
+      ['放樣與管線探查','依核定圖說辦理開挖範圍放樣，並會同管線單位確認地下既有管線位置，避免施工損害。'],
+      ['擋土設施施作','依擋土支撐設計先行施作擋土結構，完成後始得辦理開挖作業。'],
+      ['分層分區開挖','由外而內、由淺而深分層開挖，每層開挖後檢視邊坡及擋土設施狀況。'],
+      ['排水及集水','開挖面設置臨時排水溝、集水井，必要時辦理降水作業，避免地表水或地下水滲入影響邊坡穩定。'],
+      ['開挖面自主檢查','每一分區開挖完成後辦理自主檢查，確認無異常滲水、坍滑或擋土設施變位。'],
+      ['監測資料檢核','比對監測數據是否達警戒值，異常時立即停工並通報處理。']
+    ])+
+
+    '<div class="sub-title" style="margin-top:16px;">3.3 開挖注意事項</div>'+
+    '<ul>'+
+    '<li>開挖作業區周邊應設置警戒標示及防護設施，機具進出動線應與人員通行動線區隔。</li>'+
+    '<li>豪雨或颱風來臨前，應檢查開挖面及擋土設施排水是否順暢，必要時停止開挖作業。</li>'+
+    '<li>開挖深度接近或超過擋土支撐設計深度時，應即通報監造單位並停工檢討。</li>'+
+    '</ul>'+
+    reviewNote+
+    '<div class="page-num">3</div>'+
+    '</div>';
+
+  if(isOn('ex-ch4'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">第四章、擋土支撐</div>'+
+
+    '<div class="sub-title">4.1 擋土方式</div>'+
+    '<p>本工程擋土方式採「'+support+'」，實際採用工法應依地質條件、開挖深度、鄰房現況及施工空間等因素，由結構技師依規範辦理擋土結構設計計算後確認，本章節僅為概述性說明，不得逕以此取代正式設計圖說。</p>'+
+
+    '<div class="sub-title">4.2 擋土結構設計原則</div>'+
+    '<p>擋土結構應能承受開挖深度範圍內之土壓力（含主動土壓力、被動土壓力）及地下水壓力，並依據地質鑽探報告之土層力學參數辦理結構分析，確保開挖期間邊坡及鄰近構造物之安全。</p>'+
+
+    '<div class="sub-title">4.3 施工要求</div>'+
+    '<ul>'+
+    '<li>擋土結構施作前應完成材料及施工機具進場檢驗，確認符合設計規格。</li>'+
+    '<li>擋土結構施工過程應隨時檢核垂直度、深度及間距是否符合設計圖說。</li>'+
+    '<li>擋土結構完成後應辦理自主檢查及查驗，經監造單位確認合格後始得辦理後續開挖作業。</li>'+
+    '</ul>'+
+    reviewNote+
+    '<div class="page-num">4</div>'+
+    '</div>';
+
+  if(isOn('ex-ch5'))out+=
+    '<div class="page doc-section">'+
+    '<div class="ch-title">第五章、監測計畫</div>'+
+
+    '<div class="sub-title">5.1 監測項目</div>'+
+    '<p>依開挖規模及鄰房現況，本工程監測項目至少應包含擋土壁體變位、鄰房沉陷及傾斜、地下水位變化，必要時增設地表沉陷、支撐軸力等監測項目，監測儀器佈設位置應涵蓋開挖影響範圍內之關鍵位置。</p>'+
+
+    '<div class="sub-title">5.2 監測頻率</div>'+
+    '<p>開挖期間監測頻率原則上每日或依施工進度加密辦理，開挖深度接近設計深度、鄰近建築物或監測數據趨近警戒值時應提高監測頻率；開挖完成後仍應持續監測至結構穩定為止。</p>'+
+
+    '<div class="sub-title">5.3 警戒值與行動值機制</div>'+
+    '<p>各監測項目應訂定警戒值及行動值，監測數據達警戒值時應加強監測頻率並通報相關單位；達行動值時應立即停止開挖作業，並會同技師研判原因及擬定應變措施，確認安全無虞後始得復工。</p>'+
+
+    '<div class="sub-title" style="margin-top:16px;">監測計畫自主檢查表</div>'+
+    checkTable([
+      '監測儀器（傾度管、水位觀測井等）已完成佈設及初始值量測',
+      '監測頻率符合本計畫規定，並隨開挖進度調整',
+      '監測數據已與警戒值、行動值比對並留存紀錄',
+      '監測數據異常時已通報監造單位並留存處理紀錄',
+      '鄰房現況調查紀錄已留存備查'
+    ])+
+    reviewNote+
+    '<div class="page-num">5</div>'+
     '</div>';
 
   return out;
