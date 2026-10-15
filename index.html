@@ -353,11 +353,24 @@ var PLAN_MODULES = {
     {id:'cover',        label:'封面',      default:true},
     {id:'review',       label:'審查核章表', default:true},
     {id:'toc',          label:'目錄',      default:true},
-    {id:'oc-survey',    label:'測量工程',   default:true},
-    {id:'oc-excavation',label:'開挖工程',   default:true},
-    {id:'oc-rebar',     label:'鋼筋工程',   default:true},
-    {id:'oc-formwork',  label:'模板工程',   default:true},
-    {id:'oc-concrete',  label:'混凝土工程', default:true},
+    // 依工程會《建築工程施工計畫書製作綱要手冊》整體施工計畫 13 章
+    {id:'oc-ch1',       label:'第一章　工程概述',         default:true},
+    {id:'oc-ch2',       label:'第二章　開工前置作業',     default:true},
+    {id:'oc-ch3',       label:'第三章　施工作業管理',     default:true},
+    {id:'oc-ch4',       label:'第四章　進度管理',         default:true},
+    {id:'oc-ch5',       label:'第五章　假設工程計畫',     default:true},
+    {id:'oc-survey',    label:'第六章　測量計畫',         default:true},
+    {id:'oc-ch7',       label:'第七章　分項施工計畫',     default:true},
+    {id:'oc-excavation',label:'　└ 開挖工程',            default:true},
+    {id:'oc-rebar',     label:'　└ 鋼筋工程',            default:true},
+    {id:'oc-formwork',  label:'　└ 模板工程',            default:true},
+    {id:'oc-concrete',  label:'　└ 混凝土工程',          default:true},
+    {id:'oc-ch8',       label:'第八章　設施工程分項施工計畫', default:true},
+    {id:'oc-ch9',       label:'第九章　職業安全衛生管理計畫', default:true},
+    {id:'oc-ch10',      label:'第十章　緊急應變及防災計畫', default:true},
+    {id:'oc-ch11',      label:'第十一章　環境保護執行',   default:true},
+    {id:'oc-ch12',      label:'第十二章　施工交通維持及安全管制措施', default:true},
+    {id:'oc-ch13',      label:'第十三章　驗收移交管理計畫', default:true},
   ],
   // 職業安全衛生計畫書：跟業主提到的「三大計畫書」（整體施工／整體品質／
   // 職安衛生）對齊，這次只搭骨架，內容留白——refreshPreview()沒有對應這個
@@ -1273,11 +1286,12 @@ function refreshPreview(){
   if(PLAN==='scaffold'){out+=pagesScaffold();}
   else if(PLAN==='formwork-calc'){out+=pagesFormworkCalc();}
   else if(PLAN==='quality'){out+=pagesQuality();}
-  else if(PLAN==='overall-construction'){out+=pagesOverallConstruction();}
+  else if(PLAN==='overall-construction'){var oc=pagesOC13();out+=oc.html+pagesOverallConstruction(oc.subs)+pagesOC13Tail();}
   else if(PLAN==='excavation'){out+=pagesExcavation();}
   else{out+=pagesStub(PLAN);}
 
   document.getElementById('doc-container').innerHTML=out;
+  numberPages();
 }
 
 // ─── Formwork Calc pages (placeholder that auto-computes) ──
@@ -1358,7 +1372,8 @@ function checkTable(items){
     '<div style="margin-top:10px;font-size:9.5pt;color:#555;">自主檢查人員：________________　日期：________________　監造確認：________________</div>';
 }
 
-function pagesOverallConstruction(){
+function pagesOverallConstruction(subs){
+  subs=subs||{};
   var out='';
   var datum=v('oc-datum')||'TWD97 二度分帶';
   var depth=v('oc-depth')||'3.0';
@@ -1367,52 +1382,9 @@ function pagesOverallConstruction(){
   var support=supportLabels[v('oc-support')]||'無支撐開挖（放坡）';
   var reviewNote='<div class="doc-footer">⚠ 本章節為輔助草稿內容，實際工法、數值與規範引用仍須由專業技師依現場條件審核後定稿。</div>';
 
-  if(isOn('oc-survey'))out+=
-    '<div class="page doc-section">'+
-    '<div class="ch-title">測量工程</div>'+
-
-    '<div class="sub-title">一、測量範圍及依據</div>'+
-    '<p>本工程測量作業範圍涵蓋「'+v('p-name')+'」全區施工界線及相關公共設施，測量基準座標系統採用'+datum+'，並以既有圖根點或都市計畫樁位作為控制點引測依據，確保測量成果與圖說座標系統一致。</p>'+
-
-    '<div class="sub-title">二、測量方法</div>'+
-    '<p>1. 控制點測設：依基準點引測建立本工程專用控制點，並定期複測校核，避免施工過程中控制點位移影響後續放樣精度。</p>'+
-    '<p>2. 高程引測：以鄰近水準點引測本工程高程基準，作為各項工程放樣、開挖深度、構造物標高控制之依據。</p>'+
-    '<p>3. 放樣作業：依核定設計圖說辦理建築線、構造物邊界、管線位置等放樣，放樣成果經自主檢核後始得進行後續施工。</p>'+
-
-    '<div class="sub-title">三、精度要求</div>'+
-    '<p>平面位置測量誤差、高程測量誤差應符合主管機關相關測量規範及契約規定之允許誤差範圍，測量成果如有疑義應即刻複測確認，不得逕行施工。</p>'+
-
-    '<div class="sub-title">四、測量儀器</div>'+
-    '<p>依作業性質採用全站儀、GPS/RTK衛星定位系統、水準儀等合格檢驗之測量儀器，儀器應於有效檢校期限內使用。</p>'+
-    reviewNote+
-    '<div class="page-num"></div>'+
-    '</div>'+
-
-    '<div class="page doc-section">'+
-    '<div class="ch-title">測量工程 · 施工流程</div>'+
-    flowBox([
-      ['資料蒐集與圖根點勘查','蒐集既有圖根點、都市計畫樁位及相關測量成果，現場勘查確認可用控制點位置與現況。'],
-      ['控制點測設','依基準點引測建立本工程專用控制點，並釘設穩固樁位。'],
-      ['高程引測','以鄰近水準點引測本工程高程基準。'],
-      ['現場放樣','依核定圖說辦理建築線、構造物邊界、管線位置等放樣。'],
-      ['放樣自主複核','雙人複核放樣成果，確認無誤後始得移交施工。'],
-      ['施工放樣移交','會同監造/施工單位現場確認樁位，填寫移交紀錄。']
-    ])+
-    '<div class="sub-title" style="margin-top:16px;">測量工程自主檢查表</div>'+
-    checkTable([
-      '控制點座標核對基準點引測紀錄',
-      '高程引測核對鄰近水準點',
-      '放樣點位完成雙人複核',
-      '測量儀器檢校證明於有效期限內',
-      '測量紀錄表單完整簽認並留存'
-    ])+
-    reviewNote+
-    '<div class="page-num"></div>'+
-    '</div>';
-
   if(isOn('oc-excavation'))out+=
     '<div class="page doc-section">'+
-    '<div class="ch-title">開挖工程</div>'+
+    '<div class="ch-title">'+(subs['oc-excavation']||'')+' 開挖工程</div>'+
 
     '<div class="sub-title">一、開挖範圍及深度</div>'+
     '<p>本工程開挖範圍面積約 '+area+' m²，開挖總深度約 '+depth+' m，擋土方式採「'+support+'」，實際數值應依地質鑽探報告及結構設計圖說核實調整。</p>'+
@@ -1433,7 +1405,7 @@ function pagesOverallConstruction(){
     '</div>'+
 
     '<div class="page doc-section">'+
-    '<div class="ch-title">開挖工程 · 施工流程</div>'+
+    '<div class="ch-title">'+(subs['oc-excavation']||'')+' 開挖工程 · 施工流程</div>'+
     flowBox([
       ['地質資料確認','核對地質鑽探報告與設計圖說，確認開挖深度、範圍及地下水位條件。'],
       ['擋土設施施作','依核定擋土方式施作（連續壁/鋼板樁等），無支撐開挖者依放坡角度施作。'],
@@ -1457,7 +1429,7 @@ function pagesOverallConstruction(){
 
   if(isOn('oc-rebar'))out+=
     '<div class="page doc-section">'+
-    '<div class="ch-title">鋼筋工程</div>'+
+    '<div class="ch-title">'+(subs['oc-rebar']||'')+' 鋼筋工程</div>'+
 
     '<div class="sub-title">一、材料與規格</div>'+
     '<p>鋼筋材質應符合設計圖說及規範要求，進場時應檢附出廠證明及材質證明文件，並依批號抽驗，不符合規定者不得使用。</p>'+
@@ -1475,7 +1447,7 @@ function pagesOverallConstruction(){
     '</div>'+
 
     '<div class="page doc-section">'+
-    '<div class="ch-title">鋼筋工程 · 施工流程</div>'+
+    '<div class="ch-title">'+(subs['oc-rebar']||'')+' 鋼筋工程 · 施工流程</div>'+
     flowBox([
       ['材料進場檢驗','核對出廠證明、材質證明文件，並依批號抽驗規格、數量。'],
       ['裁剪彎折加工','依圖說尺寸及彎鉤角度裁剪彎折，加工成品逐項核對。'],
@@ -1499,7 +1471,7 @@ function pagesOverallConstruction(){
 
   if(isOn('oc-formwork'))out+=
     '<div class="page doc-section">'+
-    '<div class="ch-title">模板工程</div>'+
+    '<div class="ch-title">'+(subs['oc-formwork']||'')+' 模板工程</div>'+
 
     '<div class="sub-title">一、材料與支撐系統</div>'+
     '<p>模板材料應具足夠強度及剛度，表面平整無破損變形；支撐系統應依計算書規格施作，確保足以承受澆置期間之新拌混凝土側壓力及施工活載重。</p>'+
@@ -1517,7 +1489,7 @@ function pagesOverallConstruction(){
     '</div>'+
 
     '<div class="page doc-section">'+
-    '<div class="ch-title">模板工程 · 施工流程</div>'+
+    '<div class="ch-title">'+(subs['oc-formwork']||'')+' 模板工程 · 施工流程</div>'+
     flowBox([
       ['模板材料檢驗','檢查模板材料強度、剛度及表面狀況，不合格材料不得使用。'],
       ['支撐系統組立','依計算書規格組立支撐系統，確認間距與鎖固方式正確。'],
@@ -1541,7 +1513,7 @@ function pagesOverallConstruction(){
 
   if(isOn('oc-concrete'))out+=
     '<div class="page doc-section">'+
-    '<div class="ch-title">混凝土工程</div>'+
+    '<div class="ch-title">'+(subs['oc-concrete']||'')+' 混凝土工程</div>'+
 
     '<div class="sub-title">一、配比與材料</div>'+
     '<p>混凝土配比應依設計強度需求辦理配比設計，並取得試拌報告確認符合要求；進場時應核對送料單、辦理坍度試驗及製作試體。</p>'+
@@ -1559,7 +1531,7 @@ function pagesOverallConstruction(){
     '</div>'+
 
     '<div class="page doc-section">'+
-    '<div class="ch-title">混凝土工程 · 施工流程</div>'+
+    '<div class="ch-title">'+(subs['oc-concrete']||'')+' 混凝土工程 · 施工流程</div>'+
     flowBox([
       ['配比設計確認','核對配比設計書及試拌報告，確認符合設計強度要求。'],
       ['澆置前查驗','會同查驗模板、鋼筋、預埋件是否就位完成。'],
@@ -1713,9 +1685,256 @@ function pagesExcavation(){
   return out;
 }
 
+// ─── 整體施工計畫書：工程會 13 章架構 ─────────────────────
+// 章節依行政院公共工程委員會《建築工程施工計畫書製作綱要手冊》（95年版）
+// 的整體施工計畫架構。各章內容是供承攬廠商修改的草稿骨架（○○ 為待填處），
+// 不是定稿；原本的測量／開挖／鋼筋／模板／混凝土內容分別放在第六章與第七章。
+var OC_SUB_IDS=['oc-excavation','oc-rebar','oc-formwork','oc-concrete'];
+var OC_SUB_NAMES={'oc-excavation':'開挖工程','oc-rebar':'鋼筋工程','oc-formwork':'模板工程','oc-concrete':'混凝土工程'};
+function ocSubNumbers(){
+  var n=0,map={};
+  OC_SUB_IDS.forEach(function(id){if(isOn(id))map[id]='7.'+(++n);});
+  return map;
+}
+function ocEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function ocVal(id,fallback){var x=(v(id)||'').trim();return ocEsc(x||fallback||'○○');}
+var OC_NOTE='<div class="doc-footer">⚠ 本章為依工程會製作綱要整理之草稿架構，○○ 處及實際工法、數量、人員、時程，須由承攬廠商依契約與工地現況填寫，並經專業人員審核後定稿。</div>';
+function ocPage(title,body){
+  return '<div class="page doc-section"><div class="ch-title">'+title+'</div>'+body+OC_NOTE+'<div class="page-num"></div></div>';
+}
+function ocTable(head,rows){
+  return '<table class="content-table"><tr>'+head.map(function(h){return '<th>'+h+'</th>';}).join('')+'</tr>'+
+    rows.map(function(r){return '<tr>'+r.map(function(c){return '<td>'+c+'</td>';}).join('')+'</tr>';}).join('')+'</table>';
+}
+
+function pagesOC13(){
+  var out='';
+  var nm=ocVal('p-name'),loc=ocVal('p-loc'),ow=ocVal('p-owner'),ds=ocVal('p-designer'),sv=ocVal('p-supervisor'),ct=ocVal('p-contractor');
+  var eng=ocVal('p-engineer'),mgr=ocVal('p-site-mgr'),qc=ocVal('p-qc'),sf=ocVal('p-safety');
+  var dur=ocVal('p-duration'),amt=(v('p-amount')||'').trim();
+  var amtTxt=amt?'新臺幣 '+ocEsc(Number(amt).toLocaleString('zh-TW'))+' 元':'新臺幣 ○○ 元';
+  var start=(v('p-start')||'').trim();
+  var startTxt=start?(function(){var p=start.split('-');return '民國 '+(+p[0]-1911)+' 年 '+(+p[1])+' 月 '+(+p[2])+' 日';})():'民國 ○○ 年 ○○ 月 ○○ 日';
+  var subs=ocSubNumbers();
+
+  if(isOn('oc-ch1'))out+=ocPage('第一章、工程概述',
+    '<div class="sub-title">一、工程概要</div>'+
+    ocTable(['項目','內容'],[
+      ['工程名稱',nm],['工程地點',loc],['主辦機關',ow],['設計單位',ds],['監造單位',sv],['承攬廠商',ct],
+      ['契約金額',amtTxt],['開工日期',startTxt],['工程期限','開工之日起 '+dur+' 日曆天']
+    ])+
+    '<div class="sub-title">二、主要施工項目及數量</div>'+
+    ocTable(['項次','施工項目','單位','數量','備註'],[
+      ['1','○○工程','式','○○',''],['2','○○工程','m³','○○',''],['3','○○工程','t','○○',''],['4','○○工程','m²','○○','']
+    ])+
+    '<p>（依契約詳細價目表列出主要施工項目及數量。）</p>'+
+    '<div class="sub-title">三、名詞定義</div>'+
+    '<p>1. 機關：指'+ow+'。　2. 監造單位：指'+sv+'。　3. 廠商：指'+ct+'。</p>'+
+    '<p>4. 其他本計畫書所用名詞，依契約文件及相關規範之定義。</p>');
+
+  if(isOn('oc-ch2'))out+=ocPage('第二章、開工前置作業',
+    '<div class="sub-title">一、地質研判</div>'+
+    '<p>依設計階段地質鑽探報告研判工址地層分布、地下水位及特殊地質（如軟弱地層、礫石層、地下水湧出等），並評估其對開挖、基礎及降水作業之影響；資料不足時，應建議機關辦理補充調查。</p>'+
+    '<div class="sub-title">二、工址現況調查</div>'+
+    '<p>開工前會同監造單位調查工址範圍、地形高程、既有構造物、樹木、出入動線及周邊道路交通狀況，並拍照記錄存證。</p>'+
+    '<div class="sub-title">三、地下埋設物調查</div>'+
+    '<p>向自來水、電力、電信、瓦斯、污水等管線單位查詢圖資，必要時以試挖確認位置與深度，研擬保護或遷移措施，避免施工挖損。</p>'+
+    '<div class="sub-title">四、鄰房調查</div>'+
+    '<p>依契約規定於開工前委託專業單位辦理鄰房現況調查（裂縫、傾斜等）並作成紀錄，作為施工期間監測與爭議處理之依據。</p>');
+
+  if(isOn('oc-ch3'))out+=ocPage('第三章、施工作業管理',
+    '<div class="sub-title">一、工地組織</div>'+
+    ocTable(['職稱','姓名','主要職掌'],[
+      ['專任工程人員',eng,'督察施工、查驗工程品質，依法簽名或蓋章'],
+      ['工地主任',mgr,'工地事務管理、施工技術指導及施工安全'],
+      ['品管人員',qc,'執行品質計畫、自主檢查及材料檢驗'],
+      ['職業安全衛生人員',sf,'職業安全衛生管理、教育訓練及自動檢查'],
+      ['○○工程師','○○','○○']
+    ])+
+    '<div class="sub-title">二、勞動力及物料市場調查</div>'+
+    '<p>調查主要工種（鋼筋、模板、混凝土等）人力供需與主要材料（鋼筋、混凝土、砂石等）供應及價格趨勢，評估缺工、缺料風險並預擬因應措施。</p>'+
+    '<div class="sub-title">三、主要施工機具及設備</div>'+
+    ocTable(['機具名稱','規格','數量','使用工項'],[['○○','○○','○○','○○'],['○○','○○','○○','○○']])+
+    '<div class="sub-title">四、整體施工程序</div>'+
+    '<p>假設工程 → 測量放樣 → 開挖及擋土 → 基礎工程 → 結構體工程 → 裝修及設施工程 → 清理及驗收（依本工程實際工項調整）。</p>'+
+    '<div class="sub-title">五、工務管理　六、物料管理</div>'+
+    '<p>建立施工日誌、工地會議、文件收發及變更設計管理流程；材料進場依品質計畫辦理檢驗，建立進出場及庫存紀錄。</p>'+
+    '<div class="sub-title">七、請款流量　八、關鍵課題</div>'+
+    '<p>依預定進度及契約付款條件估算各期估驗金額；列出本工程施工關鍵課題（如深開挖、鄰房保護、雨季施工等）及對策。</p>');
+
+  if(isOn('oc-ch4')){
+    var sched=null,proj=(localStorage.getItem('jrh_proj_pj-name')||'').trim();
+    try{if(window.JRH&&JRH.getOutput){var o=JRH.getOutput('adm');if(o&&o.data&&o.data.activities&&o.data.activities.length)sched=o;}}catch(e){}
+    var schedHtml;
+    if(sched){
+      var acts=sched.data.activities.slice().sort(function(a,b){return a.start-b.start;});
+      schedHtml='<p>以下取自「進度網狀圖」工具於 '+ocEsc(sched.date)+' 存入專案「'+ocEsc(proj)+'」之排程，總工期 '+ocEsc(sched.data.totalDuration)+' 天。網狀圖、桿狀圖及 S 曲線請以該工具「列印送審圖」輸出附於本章。</p>'+
+        ocTable(['項次','作業名稱','開始（第幾天）','工期（天）','完成（第幾天）'],acts.map(function(a,i){
+          return [String(i+1),ocEsc(a.name),String(a.start),String(a.duration),String(a.start+a.duration)];
+        }));
+    }else{
+      schedHtml='<p>以要徑法（CPM）排定施工預定進度，提送網狀圖、預定進度桿狀圖及預定進度 S 曲線。</p>'+
+        '<p style="color:#8a6d1f;">💡 在「進度網狀圖」工具中以相同工程名稱完成計算後，重新整理本頁，排程會自動帶入本章。</p>';
+    }
+    out+=ocPage('第四章、進度管理',
+      '<div class="sub-title">一、施工預定進度</div>'+schedHtml+
+      '<div class="sub-title">二、進度管控</div>'+
+      '<p>1. 每週（月）比對預定與實際進度，於工地會議檢討並填報進度報表。</p>'+
+      '<p>2. 進度落後時分析原因（天候、缺工、缺料、設計變更等），提出趕工或改善措施送監造單位審查。</p>'+
+      '<p>3. 屬不可歸責於廠商之事由致影響工期者，依契約規定檢附資料申請展延工期。</p>');
+  }
+
+  if(isOn('oc-ch5'))out+=ocPage('第五章、假設工程計畫',
+    ocTable(['項目','規劃內容'],[
+      ['一、工區配置','工區範圍、出入口、材料堆置區、加工區、機具停放區之配置（附工區配置圖）'],
+      ['二、整地計畫','清除、整地範圍及高程'],
+      ['三、臨時房舍規劃','工務所、監造辦公室、工人休息室、廁所'],
+      ['四、臨時用地規劃','需另行租用之臨時用地及其復原'],
+      ['五、施工便道規劃','便道位置、寬度、鋪面及維護'],
+      ['六、臨時用電配置','用電需求、配電盤位置及漏電斷路器設置'],
+      ['七、臨時給排水配置','施工用水來源、排水路及沉砂設施'],
+      ['八、剩餘土石方處理','剩餘土石方數量、流向及處理場所'],
+      ['九、植栽移植與復原計畫','需移植之樹木與復原方式'],
+      ['十、其他臨時設施及安全維護事項','圍籬、警示燈、洗車台、安全走道等']
+    ].map(function(r){return [r[0],r[1]+'：○○'];})));
+
+  if(isOn('oc-survey')){
+    var datum=ocEsc(v('oc-datum')||'TWD97 二度分帶');
+    out+=ocPage('第六章、測量計畫',
+      '<div class="sub-title">一、測量使用設備</div>'+
+      '<p>依作業性質採用全站儀、GPS/RTK 衛星定位系統、水準儀等經檢校合格之儀器，並於有效檢校期限內使用。</p>'+
+      '<div class="sub-title">二、控制測量</div>'+
+      '<p>測量基準座標系統採用'+datum+'，以既有圖根點或都市計畫樁位為依據引測建立本工程控制點及高程基準，並定期複測校核。</p>'+
+      '<div class="sub-title">三、施工測量</div>'+
+      '<p>依核定圖說辦理建築線、構造物邊界、管線位置等放樣，成果經雙人自主複核並會同監造單位確認後始得施工；平面及高程誤差應符合契約及相關規範之允許誤差。</p>')+
+      '<div class="page doc-section"><div class="ch-title">第六章、測量計畫 · 施工流程</div>'+
+      flowBox([
+        ['資料蒐集與圖根點勘查','蒐集既有圖根點、都市計畫樁位及相關測量成果，現場確認可用控制點。'],
+        ['控制點測設','依基準點引測建立本工程專用控制點，並釘設穩固樁位。'],
+        ['高程引測','以鄰近水準點引測本工程高程基準。'],
+        ['現場放樣','依核定圖說辦理放樣。'],
+        ['放樣自主複核','雙人複核放樣成果。'],
+        ['施工放樣移交','會同監造單位確認樁位並填寫移交紀錄。']
+      ])+
+      '<div class="sub-title" style="margin-top:16px;">測量自主檢查表</div>'+
+      checkTable(['控制點座標核對基準點引測紀錄','高程引測核對鄰近水準點','放樣點位完成雙人複核','測量儀器檢校證明於有效期限內','測量紀錄表單完整簽認並留存'])+
+      OC_NOTE+'<div class="page-num"></div></div>';
+  }
+
+  if(isOn('oc-ch7')){
+    var subRows=OC_SUB_IDS.filter(function(id){return subs[id];}).map(function(id){
+      return [subs[id],OC_SUB_NAMES[id],'該工項施工前 ○○ 日','本計畫書 '+subs[id]+' 節（摘要）'];
+    });
+    out+=ocPage('第七章、分項施工計畫',
+      '<div class="sub-title">一、分項施工計畫提送時程與管制</div>'+
+      '<p>各分項施工計畫應於該工項施工前提送監造單位審查，未經核定不得施工。</p>'+
+      (subRows.length?ocTable(['節次','分項工程','預定提送時程','備註'],subRows):'<p>（請於左側「章節模組」勾選本工程之分項工程。）</p>')+
+      '<div class="sub-title">二、分項施工計畫綱要</div>'+
+      '<p>各分項施工計畫至少包括：施工方法及步驟、施工程序（流程圖）、機具及人力配置、分項品質計畫（施工要領、品質管理標準、材料及施工檢驗程序、自主檢查表）、安全衛生措施。以下各節為摘要，正式分項施工計畫書另行提送。</p>');
+  }
+  return {html:out,subs:subs};
+}
+
+function pagesOC13Tail(){
+  var out='';
+  if(isOn('oc-ch8'))out+=ocPage('第八章、設施工程分項施工計畫',
+    '<div class="sub-title">一、設施工程分項施工計畫提送時程與管制</div>'+
+    '<p>水電、空調、消防、弱電等設施工程之分項施工計畫，應配合結構體施工時程提前提送，以利預埋管線及開口預留。</p>'+
+    '<div class="sub-title">二、設施工程分項施工計畫綱要</div>'+
+    '<p>內容比照第七章分項施工計畫綱要，並增列設備功能測試與試運轉計畫。</p>'+
+    '<div class="sub-title">三、施工界面整合</div>'+
+    ocTable(['界面項目','相關工項','整合方式'],[['預埋管線／套管','結構體 × 水電','繪製整合施工圖，澆置前會同查驗'],['設備基座','結構體 × 空調／機電','○○'],['○○','○○','○○']]));
+
+  if(isOn('oc-ch9'))out+=ocPage('第九章、職業安全衛生管理計畫',
+    '<p style="font-size:9.5pt;color:#888;">（95 年版綱要稱「勞工安全衛生管理計畫」；現行法規為職業安全衛生法及營造安全衛生設施標準。）</p>'+
+    '<div class="sub-title">一、職業安全衛生組織及協議</div>'+
+    '<p>設置職業安全衛生管理單位及人員（職安人員：'+ocVal('p-safety')+'），與分包商成立協議組織，定期召開協議會議並作成紀錄。</p>'+
+    '<div class="sub-title">二、教育訓練</div>'+
+    '<p>新進人員、變換工作及特殊作業人員依規定辦理安全衛生教育訓練；每日施工前辦理工具箱會議（危害告知）。</p>'+
+    '<div class="sub-title">三、管理目標</div>'+
+    '<p>以零災害為目標，訂定自動檢查計畫、危害辨識及風險評估、承攬管理與緊急應變等措施；詳細內容另以「職業安全衛生計畫書」提送。</p>');
+
+  if(isOn('oc-ch10'))out+=ocPage('第十章、緊急應變及防災計畫',
+    '<div class="sub-title">一、緊急應變組織</div>'+
+    ocTable(['職務','人員','任務'],[['指揮官',ocVal('p-site-mgr'),'統籌指揮、對外聯繫'],['搶救組','○○','人員搶救、災害控制'],['通報組','○○','依通報系統通報'],['救護組','○○','傷患急救及後送']])+
+    '<div class="sub-title">二、緊急應變連絡系統</div>'+
+    ocTable(['單位','電話'],[['主辦機關（'+ocVal('p-owner')+'）','○○'],['監造單位（'+ocVal('p-supervisor')+'）','○○'],['消防局','119'],['警察局','110'],['鄰近醫院（○○醫院）','○○']])+
+    '<div class="sub-title">三、防災對策</div>'+
+    '<p>針對颱風豪雨、地震、火災、開挖崩塌、墜落等可能災害，訂定事前預防、災時應變及災後復原措施，並定期演練。</p>');
+
+  if(isOn('oc-ch11'))out+=ocPage('第十一章、環境保護執行',
+    ocTable(['項目','執行措施'],[
+      ['一、環保組織','指派環保負責人員：○○'],
+      ['二、噪音防制','低噪音機具、限制夜間施工時段'],
+      ['三、振動防制','打樁等振動作業之時段管制及鄰房監測'],
+      ['四、水污染防治','施工廢水經沉砂處理後排放，依規定辦理逕流廢水污染削減計畫'],
+      ['五、空氣污染防制','工區灑水、裸露地覆蓋、車輛洗車台，依營建工程空氣污染防制設施管理辦法辦理'],
+      ['六、廢棄物處理','營建廢棄物分類、合法清運及流向管制'],
+      ['七、生態環境保護','既有樹木及生態敏感區之保護'],
+      ['八、睦鄰溝通','施工前說明、陳情受理窗口及處理紀錄'],
+      ['九、其他','○○']
+    ]));
+
+  if(isOn('oc-ch12'))out+=ocPage('第十二章、施工交通維持及安全管制措施',
+    '<div class="sub-title">一、相關法令規章</div>'+
+    '<p>依道路交通安全規則、道路交通標誌標線號誌設置規則及地方政府道路挖掘與交通維持相關規定辦理（依工址所在縣市規定確認）。</p>'+
+    '<div class="sub-title">二、交通維持及安全管制</div>'+
+    '<p>佔用道路施工時，依核定之交通維持計畫設置警示、導引設施及交通指揮人員，夜間設置警示燈。</p>'+
+    '<div class="sub-title">三、主要材料搬運路徑</div>'+
+    '<p>主要材料及土方車輛進出路線：○○（附路線圖），避開上下學及尖峰時段。</p>');
+
+  if(isOn('oc-ch13'))out+=ocPage('第十三章、驗收移交管理計畫',
+    '<div class="sub-title">一、驗收移交文件</div>'+
+    '<p>竣工圖、材料檢（試）驗報告、設備保固書及操作維護手冊、使用執照等相關證明文件，依契約規定整理移交。</p>'+
+    '<div class="sub-title">二、設施操作及管理維護教育訓練</div>'+
+    '<p>機電、消防等設施於移交前辦理操作及維護教育訓練，並作成紀錄。</p>'+
+    '<div class="sub-title">三、施工紀錄保存</div>'+
+    '<p>施工日誌、查驗紀錄、品管紀錄、照片等依規定分類保存，完工後併同移交。</p>');
+  return out;
+}
+
+// ─── 目錄頁碼與頁尾頁碼：依實際排出的頁面計算 ─────────────
+// 一個 .page 在預覽中可能長於一張 A4（列印時會分成多頁），所以用高寬比
+// 估算每個 .page 列印時佔幾頁，再累加；目錄依章名比對各章第一頁。
+function tocCore(s){
+  return String(s||'').replace(/\s+/g,'')
+    .replace(/^第[0-9一二三四五六七八九十]+章[、．.:：]?/,'')
+    .replace(/^[壹貳參肆伍陸柒捌玖拾]+[、．.]/,'')
+    .replace(/^[0-9]+(\.[0-9]+)*/,'')
+    .replace(/^└/,'')
+    .replace(/[·・].*$/,'');
+}
+function numberPages(){
+  var c=document.getElementById('doc-container');
+  if(!c)return;
+  var pages=Array.prototype.slice.call(c.querySelectorAll('.page'));
+  var n=0,firstPageOf=[];
+  pages.forEach(function(pg){
+    if(pg.classList.contains('cover')||pg.classList.contains('review-page')||pg.classList.contains('toc'))return;
+    var w=pg.offsetWidth||1,h=pg.offsetHeight||0;
+    var printed=Math.max(1,Math.ceil(h/(w*297/210)-0.05));
+    var start=n+1; n+=printed;
+    var num=pg.querySelector('.page-num');
+    if(num)num.textContent=start;
+    var t=pg.querySelector('.ch-title');
+    if(t)firstPageOf.push({core:tocCore(t.textContent),page:start});
+  });
+  c.querySelectorAll('.toc-item').forEach(function(row){
+    var core=tocCore(row.querySelector('.ch').textContent);
+    var hit=null;
+    for(var i=0;i<firstPageOf.length&&!hit;i++){
+      var f=firstPageOf[i];
+      if(core&&(f.core===core||f.core.indexOf(core)===0||(core.length>=4&&f.core.indexOf(core)>=0)))hit=f;
+    }
+    row.querySelector('.pg').textContent=hit?hit.page:'—';
+  });
+}
+
 // ─── Init ─────────────────────────────────────────────
 initModules();
 refreshPreview();
+// jrh-core（defer）在 DOMContentLoaded 時才還原上次輸入、也才有 JRH.getOutput；載入完成後再排一次版
+window.addEventListener('load',refreshPreview);
 // Set today's date defaults
 (function(){
   var d=new Date();
