@@ -1329,6 +1329,8 @@ function pagesFormworkCalc(){
     '<div class="page-num">1</div>'+
     '</div>';
 
+  if(isOn('fc-ch2'))out+=fcCh2Page(L,W,t,H,sv,sp);
+
   if(isOn('fc-ch3'))out+=
     '<div class="page doc-section">'+
     '<div class="ch-title">第三章、模板支撐計算式</div>'+
@@ -1344,6 +1346,75 @@ function pagesFormworkCalc(){
     '</div>';
 
   return out;
+}
+
+// 模板支撐計算書第二章：支撐系統說明、數量估算、平面配置示意與立面示意。
+// 配置圖依左側輸入的樓板尺寸與間距即時畫出，只是示意；正式施工仍以
+// 技師核定之支撐配置圖為準。
+function fcCh2Page(L,W,t,H,sv,sp){
+  var sysLabels={H175:'H175×175 型鋼縱向梁 + 調整式鋼管支柱',pipe:'調整式鋼管支柱（全高）'};
+  var sys=v('fc-sys')||'H175';
+  var nLines=Math.floor(W/sv+1e-6)+1;      // 縱向梁列數（沿長向配置，橫向每 sv 一列）
+  var nPer=Math.floor(L/sp+1e-6)+1;        // 每列鋼支柱數
+  var nPost=nLines*nPer;
+
+  // 平面配置示意
+  var PW=560,PH=Math.max(180,Math.min(380,PW*W/L));
+  var sx=(PW-60)/L,sy=(PH-50)/W,ox=40,oy=20;
+  var svg='<svg viewBox="0 0 '+PW+' '+PH+'" style="width:100%;max-width:560px;display:block;margin:6px auto;" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">';
+  svg+='<rect x="'+ox+'" y="'+oy+'" width="'+(L*sx)+'" height="'+(W*sy)+'" fill="#F7F4EC" stroke="#0A1A33" stroke-width="1.5"/>';
+  for(var i=0;i<nLines;i++){
+    var y=oy+Math.min(W,i*sv)*sy;
+    svg+='<line x1="'+ox+'" y1="'+y+'" x2="'+(ox+L*sx)+'" y2="'+y+'" stroke="#9A7B2A" stroke-width="1"/>';
+    for(var j=0;j<nPer;j++){
+      var x=ox+Math.min(L,j*sp)*sx;
+      svg+='<circle cx="'+x+'" cy="'+y+'" r="1.8" fill="#143257"/>';
+    }
+  }
+  svg+='<text x="'+(ox+L*sx/2)+'" y="'+(oy+W*sy+18)+'" font-size="11" text-anchor="middle" fill="#333">長 L = '+L+' m（鋼支柱間距 '+sp+' m）</text>';
+  svg+='<text x="'+(ox-10)+'" y="'+(oy+W*sy/2)+'" font-size="11" text-anchor="middle" fill="#333" transform="rotate(-90 '+(ox-10)+' '+(oy+W*sy/2)+')">寬 W = '+W+' m（縱向梁間距 '+sv+' m）</text>';
+  svg+='</svg>';
+
+  // 立面示意
+  var E='<svg viewBox="0 0 600 200" style="width:100%;max-width:600px;display:block;margin:6px auto;" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif" font-size="11" fill="#333">'+
+    '<rect x="40" y="20" width="440" height="22" fill="#D9D4C7" stroke="#555"/>'+
+    '<text x="490" y="35">樓板 t = '+t+' m</text>'+
+    '<rect x="40" y="42" width="440" height="5" fill="#C9A24A"/>'+
+    '<text x="490" y="49">模板</text>'+
+    (sys==='H175'?'<rect x="40" y="47" width="440" height="10" fill="#9A7B2A"/><text x="490" y="66">H175 縱向梁</text>':'')+
+    [80,160,240,320,400,460].map(function(x){return '<line x1="'+x+'" y1="'+(sys==='H175'?57:47)+'" x2="'+x+'" y2="170" stroke="#143257" stroke-width="3"/>';}).join('')+
+    '<line x1="40" y1="120" x2="480" y2="120" stroke="#143257" stroke-width="1" stroke-dasharray="5 3"/>'+
+    '<text x="490" y="124">水平繫條</text>'+
+    '<text x="490" y="150">鋼支柱 @'+sp+' m</text>'+
+    '<rect x="30" y="170" width="460" height="10" fill="#B8B2A3"/>'+
+    '<text x="40" y="196">下層樓板（支承面）</text>'+
+    '<line x1="22" y1="20" x2="22" y2="170" stroke="#555"/><text x="16" y="100" text-anchor="middle" transform="rotate(-90 16 100)">樓層高 H = '+H+' m</text>'+
+    '</svg>';
+
+  return '<div class="page doc-section">'+
+    '<div class="ch-title">第二章、支撐說明及配置圖</div>'+
+    '<div class="sub-title">一、支撐系統說明</div>'+
+    '<table class="content-table" style="font-size:10pt;">'+
+    '<tr><th style="width:28%">項目</th><th>內容</th></tr>'+
+    '<tr><td>支撐系統</td><td>'+sysLabels[sys]+'</td></tr>'+
+    '<tr><td>支撐範圍</td><td>'+L+' m × '+W+' m（面積約 '+(L*W).toFixed(1)+' m²）</td></tr>'+
+    '<tr><td>樓板厚度／樓層高度</td><td>'+t+' m ／ '+H+' m</td></tr>'+
+    '<tr><td>縱向梁間距</td><td>'+sv+' m</td></tr>'+
+    '<tr><td>鋼支柱間距</td><td>'+sp+' m（每支鋼支柱負擔面積 '+(sv*sp).toFixed(2)+' m²）</td></tr>'+
+    '<tr><td>數量估算</td><td>縱向梁 '+nLines+' 列，每列鋼支柱 '+nPer+' 支，合計約 '+nPost+' 支（未計開口、梁側及損耗）</td></tr>'+
+    '<tr><td>模板面材</td><td>○○（依施工圖說及契約規定）</td></tr>'+
+    '</table>'+
+    '<div class="sub-title">二、平面配置示意圖</div>'+svg+
+    '<div class="sub-title">三、立面示意圖</div>'+E+
+    '<div class="sub-title">四、施工注意事項</div>'+
+    '<ul>'+
+    '<li>鋼支柱應垂直豎立，底部置於堅實平整之支承面並墊以木板或底座，防止沉陷與滑動。</li>'+
+    '<li>調整式鋼管支柱不得連接使用；高度較高時應依營造安全衛生設施標準有關模板支撐之規定，設置縱、橫向水平繫條並與既有構造物妥實連結。</li>'+
+    '<li>混凝土澆置前應由專人依本配置圖檢查支柱間距、垂直度及繫條設置，澆置中隨時注意支撐有無變形或異狀。</li>'+
+    '</ul>'+
+    '<div class="doc-footer">⚠ 配置圖為依輸入尺寸自動產生之示意圖，實際配置（含開口、梁下支撐、邊緣處理）以技師核定之施工圖為準。</div>'+
+    '<div class="page-num"></div>'+
+    '</div>';
 }
 
 // ─── Overall Construction pages (composable work-item modules) ──
